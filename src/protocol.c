@@ -1,7 +1,77 @@
 
+#include "protocol.h"
+
+void SetSendBufferData(sendbufQ iArray);
+
+sendbufQ sendbufArray[SIZEREPEATARRAY];
 
 
+void CommProtocol_task(void)
+{
 
+	 uint8_t i;
+
+	 for(i=0;i<SIZEREPEATARRAY;i++)
+	 {
+		
+	 	if(sendbufArray[i].enable ==1)			  //发送使能
+		{
+			sendbufArray[i].n_1ms ++;			  //时间变量累加1ms
+			if(sendbufArray[i].period_ms==0)
+			{
+				sendbufArray[i].n_1ms = 0;		//时间变量复位，待发送数据帧进入收发缓冲池				
+			}
+			else if(sendbufArray[i].n_1ms>=sendbufArray[i].period_ms)	//时间到达发送定时周期
+			{													
+				sendbufArray[i].n_1ms = 0;		//时间变量复位，待发送数据帧进入收发缓冲池
+
+				SetSendBufferData(sendbufArray[i]);	      				
+			}
+			
+		}
+	 }
+  
+}
+
+void SetSendBufferData(sendbufQ iArray)
+{
+	SetSendBuffer(
+		CalBaseRegAddress(iArray.header, iArray.regaddr),
+		iArray.length,			//发送基地址,字节长度
+		GetRegAddress(iArray.header, iArray.regaddr),
+		0, iArray.header);		//发送的起始数据地址指针,返回标志，帧头	  
+}
+
+
+void SetSendBuffer(u8 Master,u8 Slave,u16 RegAddr,u8 ByteLength,u8 *data,u8 ReturnFlag, u8 cHeader)
+{ //数据打包过程 
+	u8 m_btSendBuffer[255];
+	u8 nIndex=0;
+	u8 sum = 0;
+	u8 i = 0;
+	m_btSendBuffer[0] = '$';						//cHeader;
+	m_btSendBuffer[1] = ((Master<< 4) & 0x0F0 | (Slave & 0x0F));
+	m_btSendBuffer[2] = 0xA2;						//功能码
+	m_btSendBuffer[3] = ByteLength;        			//表示的是变量字节数，不含头部和尾部
+	m_btSendBuffer[4] = (u8)(RegAddr&0x0FF);		//基地址低8位
+	m_btSendBuffer[5] = (u8)((RegAddr&0x0FF00)>>8);	//基地址高8位
+	
+	if(ByteLength>0)
+	{
+		for (nIndex = 0;nIndex < ByteLength; nIndex++)
+		{
+			m_btSendBuffer[6+nIndex] = *(data+nIndex);
+		}
+	}
+	m_btSendBuffer[nIndex+6] = ReturnFlag;
+	for (i = 0; i < nIndex+7; i++)
+	{
+	    sum += m_btSendBuffer[i];
+	}
+	m_btSendBuffer[nIndex+7] = sum;
+
+	//USART_SendStr(pUSART, m_btSendBuffer,nIndex+8); //发送数据，添加到发送缓冲池
+}
 
 
 #if 0
