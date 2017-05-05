@@ -2,9 +2,17 @@
 #include "protocol.h"
 
 void SetSendBufferData(sendbufQ iArray);
+uint8_t* GetRegAddress(char cHeader, uint16_t regaddr);
+uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr);
+void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
+					uint8_t *data,uint8_t ReturnFlag);
 
+void SetContiuneDefaultData(void);
+
+uint16_t Base[5]={BASIC_LENGTH,FLYING_LENGTH,TRAJ_LENGTH,CTRL_LENGTH,IMG_LENGTH};
 sendbufQ sendbufArray[SIZEREPEATARRAY];
 
+UAVstatus m600Status;
 
 void CommProtocol_task(void)
 {
@@ -17,11 +25,8 @@ void CommProtocol_task(void)
 	 	if(sendbufArray[i].enable ==1)			  //发送使能
 		{
 			sendbufArray[i].n_1ms ++;			  //时间变量累加1ms
-			if(sendbufArray[i].period_ms==0)
-			{
-				sendbufArray[i].n_1ms = 0;		//时间变量复位，待发送数据帧进入收发缓冲池				
-			}
-			else if(sendbufArray[i].n_1ms>=sendbufArray[i].period_ms)	//时间到达发送定时周期
+
+			if(sendbufArray[i].n_1ms>=sendbufArray[i].period_ms)	//时间到达发送定时周期
 			{													
 				sendbufArray[i].n_1ms = 0;		//时间变量复位，待发送数据帧进入收发缓冲池
 
@@ -33,28 +38,42 @@ void CommProtocol_task(void)
   
 }
 
+void CommProtocol_init(void)
+{
+	uint8_t i;
+	for(i=0;i<SIZEREPEATARRAY;i++)
+	{
+		sendbufArray[i].index  = i;
+		sendbufArray[i].enable = 0;
+	}
+
+	SetContiuneDefaultData();
+
+}
+
 void SetSendBufferData(sendbufQ iArray)
 {
-	SetSendBuffer(
+	SetSendBuffer(0xA0,0xA1,
 		CalBaseRegAddress(iArray.header, iArray.regaddr),
-		iArray.length,			//发送基地址,字节长度
-		GetRegAddress(iArray.header, iArray.regaddr),
-		0, iArray.header);		//发送的起始数据地址指针,返回标志，帧头	  
+		iArray.length,											//发送基地址,字节长度
+		GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
 }
 
 
-void SetSendBuffer(u8 Master,u8 Slave,u16 RegAddr,u8 ByteLength,u8 *data,u8 ReturnFlag, u8 cHeader)
+void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
+					uint8_t *data,uint8_t ReturnFlag)
 { //数据打包过程 
-	u8 m_btSendBuffer[255];
-	u8 nIndex=0;
-	u8 sum = 0;
-	u8 i = 0;
-	m_btSendBuffer[0] = '$';						//cHeader;
+	uint8_t m_btSendBuffer[255];
+	uint8_t nIndex=0;
+	uint8_t sum = 0;
+	uint8_t i = 0;
+
+	m_btSendBuffer[0] = '$';							//cHeader;
 	m_btSendBuffer[1] = ((Master<< 4) & 0x0F0 | (Slave & 0x0F));
-	m_btSendBuffer[2] = 0xA2;						//功能码
-	m_btSendBuffer[3] = ByteLength;        			//表示的是变量字节数，不含头部和尾部
-	m_btSendBuffer[4] = (u8)(RegAddr&0x0FF);		//基地址低8位
-	m_btSendBuffer[5] = (u8)((RegAddr&0x0FF00)>>8);	//基地址高8位
+	m_btSendBuffer[2] = 0xA2;							//功能码
+	m_btSendBuffer[3] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
+	m_btSendBuffer[4] = (uint8_t)(RegAddr&0x0FF);			//基地址低8位
+	m_btSendBuffer[5] = (uint8_t)((RegAddr&0x0FF00)>>8);	//基地址高8位
 	
 	if(ByteLength>0)
 	{
@@ -70,9 +89,149 @@ void SetSendBuffer(u8 Master,u8 Slave,u16 RegAddr,u8 ByteLength,u8 *data,u8 Retu
 	}
 	m_btSendBuffer[nIndex+7] = sum;
 
-	//USART_SendStr(pUSART, m_btSendBuffer,nIndex+8); //发送数据，添加到发送缓冲池
+
+
 }
 
+uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr)
+{
+	uint8_t i = 0;
+	uint8_t index = 0;
+	uint16_t base = 0;
+
+	if(cHeader=='B') 		index = 0;
+	else if(cHeader=='F') 	index = 1;
+	else if(cHeader=='C')	index = 2;
+	else if(cHeader=='T')	index = 3;
+	else if(cHeader=='I')	index = 3;
+	else index = 0;
+	
+	for(i=0;i<index;i++)
+	{
+		base += Base[i];
+	}
+
+	return regaddr+base;
+}
+
+
+uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
+{//确定发送的起始数据地址指针
+
+	uint8_t i = 0;
+	uint8_t index = 0;
+	uint16_t base = 0;
+
+	if(cHeader=='B') 		index = 0;
+	else if(cHeader=='F') 	index = 1;
+	else if(cHeader=='C')	index = 2;
+	else if(cHeader=='T')	index = 3;
+	else if(cHeader=='I')	index = 3;
+	else	return (uint8_t *)(-1);
+	
+	for(i=0;i<index;i++)
+	{
+		base += Base[i];
+	}
+
+	return (uint8_t *)m600Status+regaddr+base;
+
+}
+
+
+// @brief  设置默认连续数据上报
+void SetContiuneDefaultData(void)
+{
+
+	SetSendingData('T', 500, 0, 80);		//自己添加的实验数据，返回控制模式等数据
+	// SetSendingData('T', 500, 80, 64);		//自己添加的实验数据，返回控制模式等数据	
+	// SetSendingData('T', 500, 144, 64);		//自己添加的实验数据，返回控制模式等数据	
+	// SetSendingData('T', 500, 208, 64);		//自己添加的实验数据，返回控制模式等数据		
+
+//需要发回地面站的数据再添加 
+}
+
+
+
+void SetSendingData(char header, u16 period_ms, u16 regaddr, u8 length)
+{
+	sendbufQ newSendbuf;
+	
+	newSendbuf.enable 		= 1;
+	newSendbuf.n_1ms	 	= 0;	  		//定时变量置0
+ 	newSendbuf.objAddr		= GCSAddr;		//地面站作为接收者地址	0x08
+
+
+	newSendbuf.header 	= header;		//
+	newSendbuf.period_ms	= period_ms;	//
+	newSendbuf.regaddr   = regaddr;		//
+	newSendbuf.length    = length; 		//
+	MdfRepeatArray(&NewRepeat);	
+}
+
+/**
+  * @brief  修改定时发送队列
+  * @param   pNewRepeat 需要修改/添加的队列元素
+  * @retval : 0：失败（超容量）  1：成功	 
+  */
+uint8_t MdfRepeatArray(sendbufQ *pNewRepeat)
+{
+	uint8_t i;
+	// 遍历所有， 先遍历原来就有的，如果数据缓冲池中有这数据的内存空间，则检查其值及周期，将其更新
+	for(i=0;i<SIZEREPEATARRAY;i++)
+	{	  	// 地址和长度相同，修改周期列表 
+		if(	(sendbufArray[i].enable==1)&&
+		  	(sendbufArray[i].regaddr==pNewRepeat->regaddr)&&
+		  	(sendbufArray[i].length==pNewRepeat->length)&&
+		  	(sendbufArray[i].header==pNewRepeat->header))
+		{
+			if(pNewRepeat->period_ms==0)    // 特殊 ，删除
+			{
+				sendbufArray[i].enable = 0; // 删除 ;
+				return 1;
+			}
+			else
+			{
+				sendbufArray[i].period_ms = pNewRepeat->period_ms; // 修改周期
+				return 1;	
+			}
+		}
+	}
+
+	// 添加新的
+	if(pNewRepeat->period_ms<1) return 0; 
+
+	for(i=0;i<SIZEREPEATARRAY;i++)
+	{
+		if(sendbufArray[i].enable ==0)			//寻找周期发送已停止的单元
+			break;
+		else 
+			continue;
+	}
+	
+	if(i>=SIZEREPEATARRAY) return 0;
+		
+	sendbufArray[i].n_1ms = 		pNewRepeat->n_1ms;
+	sendbufArray[i].period_ms = 	pNewRepeat->period_ms;
+	sendbufArray[i].regaddr = 	pNewRepeat->regaddr;
+	sendbufArray[i].length = 	pNewRepeat->length;
+
+	sendbufArray[i].objAddr = 	pNewRepeat->objAddr;
+	sendbufArray[i].header = 	pNewRepeat->header;
+	sendbufArray[i].enable = 1;
+
+	return 1;
+}
+
+
+void stopRepeatArray(void)
+{
+	uint8_t i;
+	for(i=0;i<SIZEREPEATARRAY;i++)
+	{
+		sendbufArray[i].enable = 0;	   //停止所有的定时周期发送任务
+	}
+}
 
 #if 0
 
@@ -130,66 +289,6 @@ void CommProtocol_task(void)
 	}
 }
 
-u16 Base[9]={200,300,300,200,400,50,300,50,50};
-u16 CalBaseRegAddress(char cHeader, u16 regaddr)
-{
-	u8 i = 0;
-	u8 index = 0;
-	u16 base = 0;
-
-	if(cHeader=='C') 
-	{
-		index = 0;
-	}
-	else if(cHeader=='T') 
-	{
-		index = 1;
-	}
-	else if(cHeader=='S') 
-	{
-		index = 2;
-	}
-	else if(cHeader=='P') 
-	{
-		index = 3;
-	}
-	else if(cHeader=='M') 
-	{
-		index = 4;
-	}
-	else if(cHeader=='A') 
-	{
-		index = 5;
-	}
-	else if(cHeader=='G') 
-	{
-		index = 6;
-	}
-	else if(cHeader=='I') 
-	{
-		index = 7;
-	}
-	else if(cHeader=='V') 
-	{
-		index = 8;
-	}
-	else if(cHeader=='U') 
-	{
-		index = 0;
-	}
-	else 
-	{
-		index = 0;
-	}
-	
-	for(i=0;i<index;i++)
-	{
-		base += Base[i];
-	}
-
-	return regaddr+base;
-}
-
 u8 CalHeaderAndAddr(u16 *addr)
 {
 	s32 address = 0;
@@ -220,36 +319,6 @@ u8 CalHeaderAndAddr(u16 *addr)
 	return header;
 }
 
-u8* GetRegAddress(char cHeader, u16 regaddr)
-{//确定发送的起始数据地址指针
-	if(cHeader=='C') return UV.NA.CV.c+regaddr;
-	else if(cHeader=='T') return UV.NA.CP.c+regaddr;
-	else if(cHeader=='S') return UV.NA.CS.c+regaddr;
-	else if(cHeader=='P') return UV.NA.PV.c+regaddr;
-	else if(cHeader=='M') return UV.NA.MO.c+regaddr;	
-	else if(cHeader=='A') return UV.NA.G1.c+regaddr;
-	else if(cHeader=='G') return UV.NA.G2.c+regaddr;
-	else if(cHeader=='I') return UV.NA.IM.c+regaddr;
-	else if(cHeader=='V') return UV.NA.SV.c+regaddr;
-	else if(cHeader=='U') return UV.c+regaddr;
-	else return (u8*)(-1);
-}
-
-bool isHeader(u8 rData)
-{
-	if(rData==(u8)'C') return true;			 	//发送数据帧帧头
-	else if(rData==(u8)'T') return true;
-	else if(rData==(u8)'S') return true;
-	else if(rData==(u8)'P') return true;
-	else if(rData==(u8)'M') return true;	
-	else if(rData==(u8)'A') return true;
-	else if(rData==(u8)'G') return true;
-	else if(rData==(u8)'I') return true;
-	else if(rData==(u8)'V') return true;
-	else if(rData==(u8)'U') return true;
-	else if(rData==(u8)'$') return true; 		//接收数据帧帧头
-	else return false;
-}
 
 void SetSendBufferData(Repeat_type iArray)
 {
@@ -259,26 +328,12 @@ void SetSendBufferData(Repeat_type iArray)
 		GetRegAddress(iArray.header, iArray.regaddr),0, iArray.header);		//发送的起始数据地址指针,返回标志，帧头	  
 }
 
-void Time_1ms_Event(void)	  //1ms定时服务函数
-{
-    
-}
 
-void CommProtocol_init(void)
-{
-	u8 i;
-	for(i=0;i<SIZEREPEATARRAY;i++)
-	{
-		RepeatArray[i].enable = 0;
-	}
-	m_bTimingA3 = true;
-}
- 
+
 void SetSendBufferA3(struct USART_TypeDefStruct *pUSART, u8 Slave,u16 RegAddr,u8 ByteLength, u8 cHeader)
 {//以A3功能号返回，参数为：串口,功能码0XA3, 发送者,接收者，基地址,字节长度, 发送的起始数据地址指针,返回标志
 	SetSendBuffer(pUSART,0xA2,OwnAddr, Slave,				//此处原为0xA3							
 		CalBaseRegAddress(cHeader, RegAddr),ByteLength,	GetRegAddress(cHeader, RegAddr),0, cHeader);
-
 
 }
 
@@ -640,43 +695,8 @@ bool PutObjectivePointCondition(short nsValue)
 	return true; 
 }
 
-void PutMovingPlatformRevise(u8 *buf, struct USART_TypeDefStruct *pUSART)
-{//用于实现移动平台约束方程系数的确定，此前须先完成起飞点、桶点位置设置
-	u8 objAddr	= (buf[1]>>4)&0x0f;
-	u16 regaddr = buf[4]|(buf[5]<<8);
-	if((buf[0]=='B')&&(regaddr==4)){;}		 	//动平台参数变量
-	else if((buf[0]=='U')&&(regaddr==1300)){;}	//动平台参数变量
-	else return;
-	if(UV.NA.G2.NA.GPS2_SetKey==1)
-	{//根据动平台设置关键字值确定平台约束方程系数
-		BeepSound(BEEP_SHORT,1);  //控制变量修改，短声1下
-		SetMovingPlatformInit();
-		if(buf[0]=='B') regaddr = 72;			//约束方程的基地址
-		else if(buf[0]=='U') regaddr = 1368; 	//约束方程的基地址
-		SetSendBufferA3(pUSART,objAddr,regaddr,16,buf[0]);
-		regaddr += 144;			  //返回原始的地轴系坐标值
-		SetSendBufferA3(pUSART,objAddr,regaddr,80,buf[0]);
-	} 
-	else if((UV.NA.G2.NA.GPS2_SetKey>=2)&&(UV.NA.G2.NA.GPS2_SetKey<=3))
-	{//标志值为2，则实时返回平台桶点位置地轴系坐标值
-		SetBackMovingPlatformContent(UV.NA.G2.NA.GPS2_SetKey);
-	}
-}
 
-void PutBackMotorRPMtoGCSState(u8 *buf)
-{
-	u16 regaddr;
-	regaddr = buf[4]|(buf[5]<<8);
-	if((buf[0]=='C')||(buf[0]=='U')) 
-	{
-		//在UV.NA.CV.NA.HandState变量内容已改为99条件下，新输入的变量地址为4时表示电机目标转速设置和实测转速返回
-		if((regaddr==4)&&(UV.NA.CV.NA.HandState==99))	//此时要求转速返回到地面站，标志置为真
-			m_bRPM = true;
-		else if((regaddr==4)&&(UV.NA.CV.NA.HandState!=99))	//此时不要求转速返回到地面站，标志置为假
-			m_bRPM = false;
-		//此变量应用是在ControlLaw模块中的Oil_ControlValueToPWM函数内
-	}
-}
+
 
 void PutFunctionA23(u8 *buf)
 {
@@ -807,19 +827,6 @@ void SetSendingTestData(struct USART_TypeDefStruct *pUSART)
 	NewRepeat.pUSART    = pUSART;
 	MdfRepeatArray(&NewRepeat);			
 }
-
-void SetPos(u8 ch)
-{
-	if(ch<=8)
-	{
-	  	UV.NA.CS.NA.Pos_Origin[ch][0]  = UV.NA.PV.NA.Pos[0];
-		UV.NA.CS.NA.Pos_Origin[ch][1]  = UV.NA.PV.NA.Pos[1];	
-		if(ch==0)
-			BeepSound(BEEP_LONG,ch);
-		else
-			BeepSound(BEEP_SHORT,ch);
-	}
-  }
 
 
 
