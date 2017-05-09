@@ -1,5 +1,9 @@
 
 #include "protocol.h"
+#include "gcs_thread.h"
+#include "serialib.h"
+
+#include <string.h>
 
 void SetSendBufferData(sendbufQ iArray);
 uint8_t* GetRegAddress(char cHeader, uint16_t regaddr);
@@ -17,6 +21,10 @@ uint16_t Base[5]={BASIC_LENGTH,FLYING_LENGTH,TRAJ_LENGTH,CTRL_LENGTH,IMG_LENGTH}
 sendbufQ sendbufArray[SIZEREPEATARRAY];
 
 UAVstatus m600Status;
+
+uint8_t sendbuf[10][100]={"ABCDEF","1234567",
+"abcdefgh"
+};
 
 void CommProtocol_task(void)
 {
@@ -57,17 +65,22 @@ void CommProtocol_init(void)
 
 void SetSendBufferData(sendbufQ iArray)
 {
+	// SetSendBuffer(0xA0,0xA1,
+	// 	CalBaseRegAddress(iArray.header, iArray.regaddr),
+	// 	iArray.length,											//发送基地址,字节长度
+	// 	GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
+
 	SetSendBuffer(0xA0,0xA1,
-		CalBaseRegAddress(iArray.header, iArray.regaddr),
-		iArray.length,											//发送基地址,字节长度
-		GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
+		0x100,
+		5,											//发送基地址,字节长度
+		sendbuf[iArray.index],0);		
 }
 
 
 void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag)
 { //数据打包过程 
-	uint8_t m_btSendBuffer[255];
+	char m_btSendBuffer[255]={2};
 	uint8_t nIndex=0;
 	uint8_t sum = 0;
 	uint8_t i = 0;
@@ -78,7 +91,10 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 	m_btSendBuffer[3] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
 	m_btSendBuffer[4] = (uint8_t)(RegAddr&0x0FF);			//基地址低8位
 	m_btSendBuffer[5] = (uint8_t)((RegAddr&0x0FF00)>>8);	//基地址高8位
-	
+	// m_btSendBuffer[4] = 0x30;			//基地址低8位
+	// m_btSendBuffer[5] = 0x31;	//基地址高8位
+
+
 	if(ByteLength>0)
 	{
 		for (nIndex = 0;nIndex < ByteLength; nIndex++)
@@ -93,6 +109,13 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 	}
 	m_btSendBuffer[nIndex+7] = sum;
 
+	// printf("sendbuf is \n");
+	// for(int kc=0;kc<20;kc++)
+	// 	printf(" %2X	\t",m_btSendBuffer[kc]);
+	// printf("\n");
+
+	serial_writesb(get_local_port(),m_btSendBuffer,20);
+	// serial_write(get_local_port(),m_btSendBuffer);
 
 
 }
@@ -147,7 +170,8 @@ uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 void SetContiuneDefaultData(void)
 {
 
-	SetSendingData('T', 500, 0, 80);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('T', 5, 0, 80);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('F', 5, 0, 80);		//自己添加的实验数据，返回控制模式等数据
 	// SetSendingData('T', 500, 80, 64);		//自己添加的实验数据，返回控制模式等数据	
 	// SetSendingData('T', 500, 144, 64);		//自己添加的实验数据，返回控制模式等数据	
 	// SetSendingData('T', 500, 208, 64);		//自己添加的实验数据，返回控制模式等数据		
@@ -222,6 +246,7 @@ uint8_t MdfRepeatArray(sendbufQ *pNewRepeat)
 
 	sendbufArray[i].objAddr = 	pNewRepeat->objAddr;
 	sendbufArray[i].header = 	pNewRepeat->header;
+	
 	sendbufArray[i].enable = 1;
 
 	return 1;

@@ -1,5 +1,6 @@
+#include "protocol.h"
 #include "gcs_thread.h"
-#include "serialib.h"
+
 
 #include <pthread.h>
 #include <stdio.h>
@@ -10,6 +11,13 @@
 
 #include <signal.h>
 #include <sys/time.h>
+
+
+void init_time(void) ;
+void init_sigaction(void);
+int init_serial(void);
+void thread_run(void);
+
 
 
 uint32_t number = 0;
@@ -27,7 +35,9 @@ void timeout_info(int signo) {
 	serial_read(s, buffer, '\n', 128);
 	printf("%s %d\n", buffer, strlen(buffer));
 		
-	serial_write(s, "ls\r\n");
+	// serial_write(s, "ls\r\n");
+
+    CommProtocol_task();
 }
 
 /* init sigaction */
@@ -44,8 +54,8 @@ void init_sigaction(void) {
 void init_time(void) {
 	struct itimerval val;
 
-	val.it_value.tv_sec = 2;
-	val.it_value.tv_usec = 0;//100000;
+	val.it_value.tv_sec = 0;
+	val.it_value.tv_usec = 100000;
 	val.it_interval = val.it_value;
 	setitimer(ITIMER_PROF, &val, NULL);
 }
@@ -60,6 +70,7 @@ int init_serial(void){
 		return -1;
 	}
 	printf("%s -> %d\n", s->port, s->fd);
+    return 0;
 
 }
 
@@ -142,3 +153,20 @@ void thread_run(void){
     thread_wait();
 }
 
+
+int gcs_interface_init(void){
+    
+    if(init_serial()==-1)
+        return -1;
+    init_sigaction();
+	init_time();
+
+    CommProtocol_init();
+
+    return 0;
+}
+
+
+serial * get_local_port(void){
+    return s;
+}

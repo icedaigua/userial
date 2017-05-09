@@ -2,9 +2,9 @@
 #define __GCS_THREAD_H__
 
 
-void init_time(void) ;
-void init_sigaction(void);
-int init_serial(void);
-void thread_run(void);
+#include "serialib.h"
+
+int gcs_interface_init(void);
+serial * get_local_port(void);
 
 #endif

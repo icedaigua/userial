@@ -11,6 +11,8 @@
 #include <fcntl.h> 
 #include <stdio.h>
 
+#include <stdint.h>
+
 typedef struct serial_s {
 	speed_t baud;
 	char* port;
@@ -22,6 +24,7 @@ int serial_read_char(serial *s, char *p);
 int serial_read(serial *s, char *buf, char eol, unsigned int len);
 int serial_write_char(serial *s, char p);
 int serial_write(serial *s, char* str);
+int serial_writesb(serial *s, char* str,uint16_t len);
 
 typedef struct timeval timer;
 

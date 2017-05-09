@@ -98,6 +98,8 @@ typedef struct  __attribute__((packed))
 	// struct sendbufQ *next;
 } sendbufQ;
 
- 
+
+void CommProtocol_init(void);
+void CommProtocol_task(void);
 
  #endif
