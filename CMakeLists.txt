@@ -11,14 +11,17 @@ set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/inc )
 
+find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
 src/protocol.c
 src/serialib.c
+src/gcs_thread.c
 )
 
 
-target_link_libraries(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}
+pthread)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 

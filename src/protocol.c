@@ -9,6 +9,10 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 
 void SetContiuneDefaultData(void);
 
+void SetSendingData(char header, uint16_t period_ms, uint16_t regaddr, uint8_t length);
+
+uint8_t MdfRepeatArray(sendbufQ *pNewRepeat);
+
 uint16_t Base[5]={BASIC_LENGTH,FLYING_LENGTH,TRAJ_LENGTH,CTRL_LENGTH,IMG_LENGTH};
 sendbufQ sendbufArray[SIZEREPEATARRAY];
 
@@ -69,7 +73,7 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 	uint8_t i = 0;
 
 	m_btSendBuffer[0] = '$';							//cHeader;
-	m_btSendBuffer[1] = ((Master<< 4) & 0x0F0 | (Slave & 0x0F));
+	m_btSendBuffer[1] = (((Master<< 4) & 0x0F0) | (Slave & 0x0F));
 	m_btSendBuffer[2] = 0xA2;							//功能码
 	m_btSendBuffer[3] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
 	m_btSendBuffer[4] = (uint8_t)(RegAddr&0x0FF);			//基地址低8位
@@ -134,7 +138,7 @@ uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 		base += Base[i];
 	}
 
-	return (uint8_t *)m600Status+regaddr+base;
+	return (uint8_t *)&m600Status+regaddr+base;
 
 }
 
@@ -153,7 +157,7 @@ void SetContiuneDefaultData(void)
 
 
 
-void SetSendingData(char header, u16 period_ms, u16 regaddr, u8 length)
+void SetSendingData(char header, uint16_t period_ms, uint16_t regaddr, uint8_t length)
 {
 	sendbufQ newSendbuf;
 	
@@ -166,7 +170,7 @@ void SetSendingData(char header, u16 period_ms, u16 regaddr, u8 length)
 	newSendbuf.period_ms	= period_ms;	//
 	newSendbuf.regaddr   = regaddr;		//
 	newSendbuf.length    = length; 		//
-	MdfRepeatArray(&NewRepeat);	
+	MdfRepeatArray(&newSendbuf);	
 }
 
 /**
