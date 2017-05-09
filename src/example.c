@@ -71,11 +71,6 @@ int main(void)
 	i = serial_read_char(s, &p);
 	printf("-> %c %d ", p, i);
 */
-/*
-	sss *es;
-	//es = (sss *) malloc(sizeof(sss));
-	sss_init(&es, "ahoj", 5);
-	printf("%s, %d\n",es->name, es->id);
-*/
+
 }
 
