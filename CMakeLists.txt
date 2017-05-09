@@ -11,7 +11,7 @@ set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/inc )
 
-find_package(Threads REQUIRED)
+# find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
 src/protocol.c
