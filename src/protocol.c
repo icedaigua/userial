@@ -186,6 +186,8 @@ void PutFunction03(uint8_t *buf)
 	memcpy((uint8_t *)&m600Status+TRAJ_ADDRESS+buf[4]*2*sizeof(double),&buf[5],2*sizeof(double));
 }
 
+
+
 void CommProtocol_init(void)
 {
 	uint8_t i;
@@ -201,28 +203,28 @@ void CommProtocol_init(void)
 
 void SetSendBufferData(sendbufQ iArray)
 {
-	// SetSendBuffer(0xA0,0xA1,
-	// 	CalBaseRegAddress(iArray.header, iArray.regaddr),
-	// 	iArray.length,											//发送基地址,字节长度
-	// 	GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
+	 SetSendBuffer(0xA0, iArray.header,
+	 	CalBaseRegAddress(iArray.header, iArray.regaddr),
+	 	iArray.length,											//发送基地址,字节长度
+	 	GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
 
-	SetSendBuffer(0xA0,0xA1,
-		0x100,
-		5,											//发送基地址,字节长度
-		sendbuf[iArray.index],0);		
+	//SetSendBuffer(0xA0,0xA1,
+	//	0x100,
+	//	5,											//发送基地址,字节长度
+	//	sendbuf[iArray.index],0);		
 }
 
 
 void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag)
 { //数据打包过程 
-	char m_btSendBuffer[255]={2};
+	char m_btSendBuffer[255]={0};
 	uint8_t nIndex=0;
 	uint8_t sum = 0;
 	uint8_t i = 0;
 
 	m_btSendBuffer[0] = '$';							//cHeader;
-	m_btSendBuffer[1] = (((Master<< 4) & 0x0F0) | (Slave & 0x0F));
+	m_btSendBuffer[1] = Slave;//(((Master<< 4) & 0x0F0) | (Slave & 0x0F));
 	m_btSendBuffer[2] = 0xA2;							//功能码
 	m_btSendBuffer[3] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
 	m_btSendBuffer[4] = (uint8_t)(RegAddr&0x0FF);			//基地址低8位
@@ -250,7 +252,7 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 	// 	printf(" %2X	\t",m_btSendBuffer[kc]);
 	// printf("\n");
 
-	serial_writesb(get_local_port(),m_btSendBuffer,20);
+	serial_writesb(get_local_port(),m_btSendBuffer, ByteLength+7);
 	// serial_write(get_local_port(),m_btSendBuffer);
 
 
@@ -258,46 +260,51 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 
 uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr)
 {
-	uint8_t i = 0;
-	uint8_t index = 0;
-	uint16_t base = 0;
 
-	if(cHeader=='B') 		index = 0;
-	else if(cHeader=='F') 	index = 1;
-	else if(cHeader=='C')	index = 2;
-	else if(cHeader=='T')	index = 3;
-	else if(cHeader=='I')	index = 3;
-	else index = 0;
+	if(cHeader=='B') 		return BASIC_ADDRESS + regaddr;
+	else if(cHeader=='F') 	return FLYING_ADDRESS + regaddr;
+	else if(cHeader=='C')	return CTRL_ADDRESS + regaddr;
+	else if(cHeader=='T')	return TRAJ_ADDRESS + regaddr;
+	else if(cHeader=='I')	return IMG_ADDRESS + regaddr;
+	else return 0xFFFF;
 	
-	for(i=0;i<index;i++)
-	{
-		base += Base[i];
-	}
+	//for(i=0;i<index;i++)
+	//{
+	//	base += Base[i];
+	//}
 
-	return regaddr+base;
+	//return regaddr+base;
 }
 
 
 uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 {//确定发送的起始数据地址指针
 
-	uint8_t i = 0;
-	uint8_t index = 0;
-	uint16_t base = 0;
 
-	if(cHeader=='B') 		index = 0;
-	else if(cHeader=='F') 	index = 1;
-	else if(cHeader=='C')	index = 2;
-	else if(cHeader=='T')	index = 3;
-	else if(cHeader=='I')	index = 3;
-	else	return (uint8_t *)(-1);
-	
-	for(i=0;i<index;i++)
-	{
-		base += Base[i];
-	}
+	if (cHeader == 'B') 		return (uint8_t *)&m600Status+BASIC_ADDRESS + regaddr;
+	else if (cHeader == 'F') 	return (uint8_t *)&m600Status+FLYING_ADDRESS + regaddr;
+	else if (cHeader == 'C')	return (uint8_t *)&m600Status+CTRL_ADDRESS + regaddr;
+	else if (cHeader == 'T')	return (uint8_t *)&m600Status+TRAJ_ADDRESS + regaddr;
+	else if (cHeader == 'I')	return (uint8_t *)&m600Status+IMG_ADDRESS + regaddr;
+	else return NULL;
 
-	return (uint8_t *)&m600Status+regaddr+base;
+	//uint8_t i = 0;
+	//uint8_t index = 0;
+	//uint16_t base = 0;
+
+	//if(cHeader=='B') 		index = 0;
+	//else if(cHeader=='F') 	index = 1;
+	//else if(cHeader=='C')	index = 2;
+	//else if(cHeader=='T')	index = 3;
+	//else if(cHeader=='I')	index = 3;
+	//else	return (uint8_t *)(-1);
+	//
+	//for(i=0;i<index;i++)
+	//{
+	//	base += Base[i];
+	//}
+
+	//return (uint8_t *)&m600Status+regaddr+base;
 
 }
 
@@ -306,8 +313,8 @@ uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 void SetContiuneDefaultData(void)
 {
 
-	SetSendingData('T', 5, 0, 80);		//自己添加的实验数据，返回控制模式等数据
-	SetSendingData('F', 5, 0, 80);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('T', 5, 0, TRAJ_LENGTH);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('F', 5, 0, FLYING_LENGTH);		//自己添加的实验数据，返回控制模式等数据
 	// SetSendingData('T', 500, 80, 64);		//自己添加的实验数据，返回控制模式等数据	
 	// SetSendingData('T', 500, 144, 64);		//自己添加的实验数据，返回控制模式等数据	
 	// SetSendingData('T', 500, 208, 64);		//自己添加的实验数据，返回控制模式等数据		
@@ -407,50 +414,63 @@ void setUAVstatus(void)
 
 void getUAVstatus(void)
 {
-	UAVstatus.ControlMode = 1;      // 飞行器控制模式 0:保护状态  1：有操纵增稳 2：姿态控	3: 轨迹控制（位置模式)  4: 轨迹控制（速度模式)
-	UAVstatus.FlightState;      // 飞行工作状态  0自检模式；1 停机 2：起飞模式 3：自主飞行  4：返程 5：降落模式 6：降落完成
+	time_t now;
+	struct tm *timenow;
 
-	UAVstatus.HandState;		//
-	UAVstatus.FlowStatus; 	    // 任务流程
-	UAVstatus.RobostStatue;     //  全自主状态  0:手动  1：自主控制
-	UAVstatus.WorkMode;		    // 工作模式  0 保护停机  1:	遥控调试 2： 自主模式  3：地面站控制
+	time(&now);
+	timenow = localtime(&now);
 
-	UAVstatus.Systime;					//
-	UAVstatus.motorSpeed;				//
-	UAVstatus.System_vol;		//
-	UAVstatus.Motor_vol;		//
-	UAVstatus.sysTemp;   		//(4) // 遥控器输入PWM信号 高电平 us长度
+	UAVstatus.ControlMode = 1;  
+	UAVstatus.FlightState = 2;      
 
+	UAVstatus.HandState   = 3;		
+	UAVstatus.FlowStatus  = 4; 	    
+	UAVstatus.RobostStatue= 5;     
+	UAVstatus.WorkMode    = 6;		    
 
-	short 	 gyro_xyz[3];          //(24) IMU 角速率 	放大 1000倍    		 rad 
-	short 	 accl_xyz[3];          //(30) IMU 加速度 	放大 1000倍    		 g
+	UAVstatus.Systime	  = now;
+	UAVstatus.motorSpeed  = 123.456;		
+	UAVstatus.System_vol	= 7;		
+	UAVstatus.Motor_vol		= 8;		
+	UAVstatus.sysTemp		= 9;   		
 
-	short 	 	atti[3];            //  姿态角 滚转 俯仰角 偏航 	放大 1000倍  rad
-	short	 	veloN[3];	        // 放大100倍	 北东地速度
-	short	 	veloB[3];	        // 放大100倍	 前右下速度
-	double 		posi[3]; 			// 当前飞行器经纬度	(经度  纬度    高度)
+	for (int kc = 0; kc < 3; kc++)
+	{
+		UAVstatus.gyro_xyz[kc] = 10+kc;
+		UAVstatus.accl_xyz[kc] = 13+kc;
+
+		UAVstatus.atti[kc]		=16+kc;
+		UAVstatus.veloN[kc]		=19+kc;
+		UAVstatus.veloB[kc]		=22+kc;
+		UAVstatus.posi[kc]		=12.34*kc;
+	}
+	UAVstatus.GpsSol_Flags = 25;  
+	UAVstatus.GpsSol_pDOP	= 26; 	
+	UAVstatus.GpsSol_numSV	= 27; 	
 	
-	unsigned char 	GpsSol_Flags;   //
-	unsigned short 	GpsSol_pDOP; 	// 0.01  移动平台的Postition DOP
-	unsigned char  	GpsSol_numSV; 	// 移动平台的Number of Svs used in navigation solution;
+	UAVstatus.pose_index = 30;
+	for(int kc=0;kc<5;kc++)
+		for(int kj=0;kj<2;kj++)
+	{
+			UAVstatus.Pos_Origin[kc][kj] = (kc+kj)*1.0;
+	}
 	
-	unsigned short pose_index;
-	double Pos_Origin[5][2]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
 
-	float	roll_obj;
-	float 	pitch_obj;
-	float 	yaw_obj;
-	float 	veloB_x_obj;
-	float 	veloB_y_obj;
-	float 	veloB_z_obj;
-	float 	posiB_x_obj;
-	float 	posiB_y_obj;
-	float 	posiB_z_obj;
+	UAVstatus.roll_obj	= 41.0;
+	UAVstatus.pitch_obj	= 42.0;
+	UAVstatus.yaw_obj	= 43.0;
+	UAVstatus.veloB_x_obj = 44.0;
+	UAVstatus.veloB_y_obj = 45.0;
+	UAVstatus.veloB_z_obj = 46.0;
+	UAVstatus.posiB_x_obj = 47.0;
+	UAVstatus.posiB_y_obj = 48.0;
+	UAVstatus.posiB_z_obj = 49.0;
 
 
-	unsigned char ImgState;     // 图像辨识 状态 0：无数据 1 ：目标丢失 2 图像定位中
-	unsigned char ImgMode;      // 上电运行成功 2: 上电无图像
-	short	ImgDist[3];         // short 单位 mm  范围 ±327675mm
+	UAVstatus.ImgState = 51;    
+	UAVstatus.ImgMode	= 52;
+	for(int kc=0;kc<3;kc++)
+		UAVstatus.ImgDist[kc]=53+kc;  
 
 	
 }
