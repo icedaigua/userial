@@ -33,6 +33,8 @@ char buffer[128];
 void timeout_info(int signo) {
 
 	serial_read(s, buffer, '\n', 128);
+    received_task(buffer,128);
+    
 	printf("%s %d\n", buffer, strlen(buffer));
 		
 	// serial_write(s, "ls\r\n");

@@ -11,19 +11,19 @@
 #define BASIC_LENGTH	20
 
 #define FLYING_HEADER	'F'
-#define FLYING_ADDRESS	0x0100
+#define FLYING_ADDRESS	BASIC_ADDRESS+BASIC_LENGTH
 #define FLYING_LENGTH	59
 
 #define TRAJ_HEADER		'T'
-#define TRAJ_ADDRESS	0x0200
+#define TRAJ_ADDRESS	FLYING_ADDRESS+FLYING_LENGTH
 #define TRAJ_LENGTH		80
 
 #define CTRL_HEADER		'C'
-#define CTRL_ADDRESS	0x0300
+#define CTRL_ADDRESS	TRAJ_ADDRESS+TRAJ_LENGTH
 #define CTRL_LENGTH		36
 
 #define IMG_HEADER		'I'
-#define IMG_ADDRESS		0x0400
+#define IMG_ADDRESS		CTRL_ADDRESS+CTRL_LENGTH
 #define IMG_LENGTH		7
 
 
@@ -95,11 +95,19 @@ typedef struct  __attribute__((packed))
 	uint8_t length;			// 数据长度
 	char header;          //(方)添加，用于判断将要打包发送的数据属于哪个数据文件中
 
-	// struct sendbufQ *next;
 } sendbufQ;
+
 
 
 void CommProtocol_init(void);
 void CommProtocol_task(void);
+
+void received_task(char *rec_buf,uint8_t len);
+
+
+void setUAVstatus(void);
+void getUAVstatus(void);
+
+
 
  #endif
