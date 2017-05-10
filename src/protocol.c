@@ -8,7 +8,7 @@
 void SetSendBufferData(sendbufQ iArray);
 uint8_t* GetRegAddress(char cHeader, uint16_t regaddr);
 uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr);
-void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
+void SetSendBuffer(uint8_t Master,char Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag);
 
 void SetContiuneDefaultData(void);
@@ -158,8 +158,7 @@ void ReceivedComPortDataEvent(char *buf)
 			break;
 		case 0x08:	 	// 异常突发事件
 			break;
-		case 0xA2:		// 定时返回数据
-		case 0xA3:		// 查询返回数据
+		default:
 
 			break;
 	}				
@@ -215,7 +214,7 @@ void SetSendBufferData(sendbufQ iArray)
 }
 
 
-void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
+void SetSendBuffer(uint8_t Master,char Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag)
 { //数据打包过程 
 	char m_btSendBuffer[255]={0};
@@ -415,62 +414,62 @@ void setUAVstatus(void)
 void getUAVstatus(void)
 {
 	time_t now;
-	struct tm *timenow;
+	// struct tm *timenow;
 
 	time(&now);
-	timenow = localtime(&now);
+	// timenow = localtime(&now);
 
-	UAVstatus.ControlMode = 1;  
-	UAVstatus.FlightState = 2;      
+	m600Status.ControlMode = 1;  
+	m600Status.FlightState = 2;      
 
-	UAVstatus.HandState   = 3;		
-	UAVstatus.FlowStatus  = 4; 	    
-	UAVstatus.RobostStatue= 5;     
-	UAVstatus.WorkMode    = 6;		    
+	m600Status.HandState   = 3;		
+	m600Status.FlowStatus  = 4; 	    
+	m600Status.RobostStatue= 5;     
+	m600Status.WorkMode    = 6;		    
 
-	UAVstatus.Systime	  = now;
-	UAVstatus.motorSpeed  = 123.456;		
-	UAVstatus.System_vol	= 7;		
-	UAVstatus.Motor_vol		= 8;		
-	UAVstatus.sysTemp		= 9;   		
+	m600Status.Systime	  = now;
+	m600Status.motorSpeed  = 123.456;		
+	m600Status.System_vol	= 7;		
+	m600Status.Motor_vol		= 8;		
+	m600Status.sysTemp		= 9;   		
 
 	for (int kc = 0; kc < 3; kc++)
 	{
-		UAVstatus.gyro_xyz[kc] = 10+kc;
-		UAVstatus.accl_xyz[kc] = 13+kc;
+		m600Status.gyro_xyz[kc] = 10+kc;
+		m600Status.accl_xyz[kc] = 13+kc;
 
-		UAVstatus.atti[kc]		=16+kc;
-		UAVstatus.veloN[kc]		=19+kc;
-		UAVstatus.veloB[kc]		=22+kc;
-		UAVstatus.posi[kc]		=12.34*kc;
+		m600Status.atti[kc]		=16+kc;
+		m600Status.veloN[kc]		=19+kc;
+		m600Status.veloB[kc]		=22+kc;
+		m600Status.posi[kc]		=12.34*kc;
 	}
-	UAVstatus.GpsSol_Flags = 25;  
-	UAVstatus.GpsSol_pDOP	= 26; 	
-	UAVstatus.GpsSol_numSV	= 27; 	
+	m600Status.GpsSol_Flags = 25;  
+	m600Status.GpsSol_pDOP	= 26; 	
+	m600Status.GpsSol_numSV	= 27; 	
 	
-	UAVstatus.pose_index = 30;
+	m600Status.pose_index = 30;
 	for(int kc=0;kc<5;kc++)
 		for(int kj=0;kj<2;kj++)
 	{
-			UAVstatus.Pos_Origin[kc][kj] = (kc+kj)*1.0;
+			m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
 	}
 	
 
-	UAVstatus.roll_obj	= 41.0;
-	UAVstatus.pitch_obj	= 42.0;
-	UAVstatus.yaw_obj	= 43.0;
-	UAVstatus.veloB_x_obj = 44.0;
-	UAVstatus.veloB_y_obj = 45.0;
-	UAVstatus.veloB_z_obj = 46.0;
-	UAVstatus.posiB_x_obj = 47.0;
-	UAVstatus.posiB_y_obj = 48.0;
-	UAVstatus.posiB_z_obj = 49.0;
+	m600Status.roll_obj	= 41.0;
+	m600Status.pitch_obj	= 42.0;
+	m600Status.yaw_obj	= 43.0;
+	m600Status.veloB_x_obj = 44.0;
+	m600Status.veloB_y_obj = 45.0;
+	m600Status.veloB_z_obj = 46.0;
+	m600Status.posiB_x_obj = 47.0;
+	m600Status.posiB_y_obj = 48.0;
+	m600Status.posiB_z_obj = 49.0;
 
 
-	UAVstatus.ImgState = 51;    
-	UAVstatus.ImgMode	= 52;
+	m600Status.ImgState = 51;    
+	m600Status.ImgMode	= 52;
 	for(int kc=0;kc<3;kc++)
-		UAVstatus.ImgDist[kc]=53+kc;  
+		m600Status.ImgDist[kc]=53+kc;  
 
 	
 }
