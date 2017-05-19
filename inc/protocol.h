@@ -12,11 +12,11 @@
 
 #define FLYING_HEADER	'F'
 #define FLYING_ADDRESS	BASIC_ADDRESS+BASIC_LENGTH
-#define FLYING_LENGTH	59
+#define FLYING_LENGTH	58
 
 #define TRAJ_HEADER		'T'
 #define TRAJ_ADDRESS	FLYING_ADDRESS+FLYING_LENGTH
-#define TRAJ_LENGTH		80
+#define TRAJ_LENGTH		82
 
 #define CTRL_HEADER		'C'
 #define CTRL_ADDRESS	TRAJ_ADDRESS+TRAJ_LENGTH
@@ -24,7 +24,7 @@
 
 #define IMG_HEADER		'I'
 #define IMG_ADDRESS		CTRL_ADDRESS+CTRL_LENGTH
-#define IMG_LENGTH		7
+#define IMG_LENGTH		6
 
 
 
@@ -76,7 +76,7 @@ typedef struct  __attribute__((packed))
 
 	unsigned char ImgState;     // 图像辨识 状态 0：无数据 1 ：目标丢失 2 图像定位中
 	unsigned char ImgMode;      // 上电运行成功 2: 上电无图像
-	short	ImgDist[3];         // short 单位 mm  范围 ±327675mm
+	short	ImgDist[2];         // short 单位 mm  范围 ±327675mm
 
 
 } UAVstatus;

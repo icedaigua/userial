@@ -251,7 +251,7 @@ void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLen
 	// 	printf(" %2X	\t",m_btSendBuffer[kc]);
 	// printf("\n");
 
-	serial_writesb(get_local_port(),m_btSendBuffer, ByteLength+7);
+	serial_writesb(get_local_port(),m_btSendBuffer, ByteLength+8);
 	// serial_write(get_local_port(),m_btSendBuffer);
 
 
@@ -312,11 +312,11 @@ uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 void SetContiuneDefaultData(void)
 {
 
-	SetSendingData('T', 5, 0, TRAJ_LENGTH);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('B', 1, 0, BASIC_LENGTH);		//自己添加的实验数据，返回控制模式等数据
 	SetSendingData('F', 5, 0, FLYING_LENGTH);		//自己添加的实验数据，返回控制模式等数据
-	// SetSendingData('T', 500, 80, 64);		//自己添加的实验数据，返回控制模式等数据	
-	// SetSendingData('T', 500, 144, 64);		//自己添加的实验数据，返回控制模式等数据	
-	// SetSendingData('T', 500, 208, 64);		//自己添加的实验数据，返回控制模式等数据		
+	SetSendingData('T', 5, 0, TRAJ_LENGTH);		//自己添加的实验数据，返回控制模式等数据	
+	SetSendingData('C', 5, 0, CTRL_LENGTH);		//自己添加的实验数据，返回控制模式等数据	
+	SetSendingData('I', 5, 0, IMG_LENGTH);		//自己添加的实验数据，返回控制模式等数据		
 
 //需要发回地面站的数据再添加 
 }
@@ -413,24 +413,27 @@ void setUAVstatus(void)
 
 void getUAVstatus(void)
 {
-	time_t now;
+	// time_t now;
 	// struct tm *timenow;
 
-	time(&now);
+	// time(&now);
 	// timenow = localtime(&now);
 
-	m600Status.ControlMode = 1;  
-	m600Status.FlightState = 2;      
+	static float now = 0.0;
 
-	m600Status.HandState   = 3;		
-	m600Status.FlowStatus  = 4; 	    
-	m600Status.RobostStatue= 5;     
-	m600Status.WorkMode    = 6;		    
+	m600Status.ControlMode   = 1;  
+	m600Status.FlightState   = 2;      
 
-	m600Status.Systime	  = now;
-	m600Status.motorSpeed  = 123.456;		
+	m600Status.HandState     = 3;		
+	m600Status.FlowStatus    = 4; 	    
+	m600Status.RobostStatue  = 5;     
+	m600Status.WorkMode      = 6;		    
+
+	now+=0.1;
+	m600Status.Systime	    = now;
+	m600Status.motorSpeed   = 123.456;		
 	m600Status.System_vol	= 7;		
-	m600Status.Motor_vol		= 8;		
+	m600Status.Motor_vol	= 8;		
 	m600Status.sysTemp		= 9;   		
 
 	for (int kc = 0; kc < 3; kc++)
@@ -438,9 +441,9 @@ void getUAVstatus(void)
 		m600Status.gyro_xyz[kc] = 10+kc;
 		m600Status.accl_xyz[kc] = 13+kc;
 
-		m600Status.atti[kc]		=16+kc;
-		m600Status.veloN[kc]		=19+kc;
-		m600Status.veloB[kc]		=22+kc;
+		m600Status.atti[kc]		= 16+kc;
+		m600Status.veloN[kc]    =19+kc;
+		m600Status.veloB[kc]	=22+kc;
 		m600Status.posi[kc]		=12.34*kc;
 	}
 	m600Status.GpsSol_Flags = 25;  
@@ -468,7 +471,7 @@ void getUAVstatus(void)
 
 	m600Status.ImgState = 51;    
 	m600Status.ImgMode	= 52;
-	for(int kc=0;kc<3;kc++)
+	for(int kc=0;kc<2;kc++)
 		m600Status.ImgDist[kc]=53+kc;  
 
 	
