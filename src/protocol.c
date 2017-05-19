@@ -8,7 +8,7 @@
 void SetSendBufferData(sendbufQ iArray);
 uint8_t* GetRegAddress(char cHeader, uint16_t regaddr);
 uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr);
-void SetSendBuffer(uint8_t Master,char Slave,uint16_t RegAddr,uint8_t ByteLength,
+void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag);
 
 void SetContiuneDefaultData(void);
@@ -214,7 +214,7 @@ void SetSendBufferData(sendbufQ iArray)
 }
 
 
-void SetSendBuffer(uint8_t Master,char Slave,uint16_t RegAddr,uint8_t ByteLength,
+void SetSendBuffer(uint8_t Master,uint8_t Slave,uint16_t RegAddr,uint8_t ByteLength,
 					uint8_t *data,uint8_t ReturnFlag)
 { //数据打包过程 
 	char m_btSendBuffer[255]={0};
@@ -224,8 +224,8 @@ void SetSendBuffer(uint8_t Master,char Slave,uint16_t RegAddr,uint8_t ByteLength
 
 	m_btSendBuffer[0] = '$';							//cHeader;
 	m_btSendBuffer[1] = Slave;//(((Master<< 4) & 0x0F0) | (Slave & 0x0F));
-	m_btSendBuffer[2] = 0xA2;							//功能码
-	m_btSendBuffer[3] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
+	m_btSendBuffer[2] = ByteLength;        				//表示的是变量字节数，不含头部和尾部
+	m_btSendBuffer[3] = 0xA2;							//功能码
 	m_btSendBuffer[4] = (uint8_t)(RegAddr&0x0FF);			//基地址低8位
 	m_btSendBuffer[5] = (uint8_t)((RegAddr&0x0FF00)>>8);	//基地址高8位
 	// m_btSendBuffer[4] = 0x30;			//基地址低8位

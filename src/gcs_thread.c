@@ -28,7 +28,7 @@ uint32_t limit = 0;
 
 serial *s;
 
-char buffer[128];
+uint8_t buffer[128];
 
 void timeout_info(int signo) {
 
@@ -38,7 +38,7 @@ void timeout_info(int signo) {
 	// printf("%s %d\n", buffer, strlen(buffer));
 		
 	// serial_write(s, "ls\r\n");
-
+    getUAVstatus();
     CommProtocol_task();
     printf("time is %10.3f \n",(limit++)*0.1);
 }
