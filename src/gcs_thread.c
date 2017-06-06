@@ -26,21 +26,35 @@ pthread_mutex_t mut;
 
 uint32_t limit = 0;
 
+int rec_len = 0;
+
 serial *s;
 
 uint8_t buffer[128];
 
 void timeout_info(int signo) {
 
-	// serial_read(s, buffer, '\n', 128);
-    // received_task(buffer,128);
-
+    int kc =0;
+	rec_len = serial_read(s, buffer, '\n', 128);
 	// printf("%s %d\n", buffer, strlen(buffer));
-		
+
+    if(rec_len>5)
+    {
+        printf("rec len = %d\n",rec_len);
+        for(kc = 0;kc<rec_len;kc++)
+        {
+            printf("%x    ",buffer[kc]);
+        }
+
+        printf("\n");
+
+        received_task(buffer,rec_len);
+    }
+        
 	// serial_write(s, "ls\r\n");
     getUAVstatus();
     CommProtocol_task();
-    printf("time is %10.3f \n",(limit++)*0.1);
+    // printf("time is %10.3f \n",(limit++)*0.1);
 }
 
 /* init sigaction */
@@ -65,7 +79,8 @@ void init_time(void) {
 
 int init_serial(void){
 
-	if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
+	// if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
+    if (serial_open(&s, "/dev/tty.usbserial-A103FSEQ", 115200) == 0){     
 		printf("Port opened.\n");
 
 	} else {

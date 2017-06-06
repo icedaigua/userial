@@ -70,17 +70,20 @@ int serial_read(serial *s, char *buf, char eol, unsigned int len)
 		
 		if (j != 0){
 			buf[i-1] = '\0';
-			return -1;
+			return i;
+			// return -1;
 		}
 
 		if (buf[i-1] == eol){
 			buf[i] = '\0';
-			return 1;
+			return i;
+			// return 1;
 		}
 	}
 
 	buf[i] = '\0';
-	return 1;
+	return i;
+	// return 1;
 }
 
 int serial_write_char(serial *s, char p)

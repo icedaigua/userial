@@ -31,6 +31,16 @@
 #define OwnAddr  0x04; // 本设备地址号, 输出驱动和测量板		04?
 #define GCSAddr  0x08 //	地面站作为接收者地址
 
+
+typedef struct  __attribute__((packed)) 
+{
+	uint8_t header[2];
+	uint8_t length;
+	unsigned short pose_index;
+	double Pos_Origin[2]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
+}flightPoint;
+
+
 typedef struct  __attribute__((packed)) 
 {
 	unsigned char ControlMode;      // 飞行器控制模式 0:保护状态  1：有操纵增稳 2：姿态控	3: 轨迹控制（位置模式)  4: 轨迹控制（速度模式)

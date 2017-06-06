@@ -15,7 +15,8 @@ void SetContiuneDefaultData(void);
 void SetSendingData(char header, uint16_t period_ms, uint16_t regaddr, uint8_t length);
 uint8_t MdfRepeatArray(sendbufQ *pNewRepeat);
 
-void analysisBuf(char R_data);
+// void analysisBuf(char R_data);
+void setFlightPonit(flightPoint fP);
 void ReceivedComPortDataEvent(char *buf);
 void PutFunction02(uint8_t *buf);
 void PutFunction03(uint8_t *buf);
@@ -59,87 +60,33 @@ void CommProtocol_task(void)
 
 void received_task(char *rec_buf,uint8_t len)
 {
-	for(int kc=0;kc<len;kc++)
-		analysisBuf(rec_buf[kc]);
+	uint8_t kc = 0;
+	flightPoint fP = {0};
+	for(kc=0;kc<len;kc++)
+	{
+		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
+			break;
+		// continue;
+	}
+	if(kc<len)
+	{
+		printf("received cmd\n");
+		memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
+
+		setFlightPonit(fP);
+	}
 }
 
-void analysisBuf(char R_data)
+void setFlightPonit(flightPoint fP)
 {
-	static uint8_t R_state = 0,checksum =0,rec_cnt = 0;
-	static uint8_t inbuf_len = 0;
-    switch (R_state)				  //接收数据帧解包用的结构变量
-    {
-        case 0:
-            {        
-                if (R_data=='$')		//header0
-                {
-					rec_cnt = 0;
-					checksum  = 0;
-
-                    RecvBuff[rec_cnt++] = R_data; 
-					checksum +=  R_data;
-					
-					R_state = 1;
-                }		
-                break;
-            } 
-        case 1:
-            {
-				if (R_data=='T')
-                {
-                	RecvBuff[rec_cnt++] = R_data; 			
-					checksum += R_data;
-					R_state=2; 
-				}
-				else
-				{
-					R_state = 0;
-				}
-				break;
-            }
-       case 2:
-            {
-                RecvBuff[rec_cnt++] = R_data; 		 // 功能码字节		
-				checksum += R_data;
-				R_state=3; 
-				break ;               
-            }
-       case 3:
-            {
-              	RecvBuff[rec_cnt++] = R_data; 		 // length
-				checksum += R_data;
-				inbuf_len = R_data;
-				
-				R_state=4; 
-				break ;
-            }
-		case 4:
-            {
-                RecvBuff[rec_cnt++] = R_data; 		 // data
-				checksum += R_data;
-				if(rec_cnt >= inbuf_len+4)
-				{
-					R_state=5; 	
-				}
-                break;
-            }			
-        case 5: //接收数据
-            { //	RecvBuff 	 接收的字符串缓冲器
-             	RecvBuff[rec_cnt++] = R_data; 		 // data
-            	if(checksum == R_data) // 校验和通过
-				{
-					ReceivedComPortDataEvent(RecvBuff);
-				}
-				R_state = 0;
-            	break ;
-            }
-        default:
-            {
-                R_state = 0;
-                break ;
-            }
-    }
+	m600Status.pose_index = fP.pose_index;
+	m600Status.Pos_Origin[m600Status.pose_index][0]
+						= fP.Pos_Origin[0];
+	m600Status.Pos_Origin[m600Status.pose_index][1]
+						= fP.Pos_Origin[1];
 }
+
+
 
 void ReceivedComPortDataEvent(char *buf)
 {
@@ -450,12 +397,12 @@ void getUAVstatus(void)
 	m600Status.GpsSol_pDOP	= 26; 	
 	m600Status.GpsSol_numSV	= 27; 	
 	
-	m600Status.pose_index = 30;
-	for(int kc=0;kc<5;kc++)
-		for(int kj=0;kj<2;kj++)
-	{
-			m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
-	}
+	// m600Status.pose_index = 30;
+	// for(int kc=0;kc<5;kc++)
+	// 	for(int kj=0;kj<2;kj++)
+	// {
+	// 		m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
+	// }
 	
 
 	m600Status.roll_obj	= 41.0;
