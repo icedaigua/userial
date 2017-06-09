@@ -18,8 +18,8 @@ uint8_t MdfRepeatArray(sendbufQ *pNewRepeat);
 // void analysisBuf(char R_data);
 void setFlightPonit(flightPoint fP);
 void ReceivedComPortDataEvent(char *buf);
-void PutFunction02(uint8_t *buf);
-void PutFunction03(uint8_t *buf);
+void PutFunction02(char *buf);
+void PutFunction03(char *buf);
 void stopRepeatArray(void);
 
 uint16_t Base[5]={BASIC_LENGTH,FLYING_LENGTH,TRAJ_LENGTH,CTRL_LENGTH,IMG_LENGTH};
@@ -111,7 +111,7 @@ void ReceivedComPortDataEvent(char *buf)
 	}				
 }															
 
-void PutFunction02(uint8_t *buf)
+void PutFunction02(char *buf)
 {
 	sendbufQ newSendbuf;
 	newSendbuf.enable = 1;
@@ -127,7 +127,7 @@ void PutFunction02(uint8_t *buf)
 	else 
 		MdfRepeatArray(&newSendbuf);
 }
-void PutFunction03(uint8_t *buf)
+void PutFunction03(char *buf)
 {
 	memcpy((uint8_t *)&m600Status+TRAJ_ADDRESS+buf[4]*2*sizeof(double),&buf[5],2*sizeof(double));
 }

@@ -1,6 +1,10 @@
 #ifndef __UAV_PROTOCOL_H__
 #define __UAV_PROTOCOL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
    
 
@@ -118,6 +122,8 @@ void received_task(char *rec_buf,uint8_t len);
 void setUAVstatus(void);
 void getUAVstatus(void);
 
-
+#ifdef __cplusplus
+}
+#endif
 
  #endif

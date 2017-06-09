@@ -2,6 +2,11 @@
 #ifndef _SERIALIB_H
 #define _SERIALIB_H
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/time.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -31,5 +36,8 @@ typedef struct timeval timer;
 void timer_init(timer **t);
 unsigned long int timer_elapsed(timer *t);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
