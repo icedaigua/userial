@@ -41,20 +41,20 @@ void timeout_info(int signo) {
     if(rec_len>5)
     {
         printf("rec len = %d\n",rec_len);
-        for(kc = 0;kc<rec_len;kc++)
-        {
-            printf("%x    ",buffer[kc]);
-        }
+//        for(kc = 0;kc<rec_len;kc++)
+//        {
+//            printf("%x    ",buffer[kc]);
+//        }
 
-        printf("\n");
+//        printf("\n");
 
         received_task(buffer,rec_len);
     }
         
 	// serial_write(s, "ls\r\n");
-    getUAVstatus();
+    //getUAVstatus();
     CommProtocol_task();
-    // printf("time is %10.3f \n",(limit++)*0.1);
+    //printf("time is %10.3f \n",(limit++)*0.1);
 }
 
 /* init sigaction */
@@ -80,7 +80,7 @@ void init_time(void) {
 int init_serial(void){
 
 	// if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
-    if (serial_open(&s, "/dev/tty.usbserial-A103FSEQ", 115200) == 0){     
+    if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
 		printf("Port opened.\n");
 
 	} else {

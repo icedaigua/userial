@@ -3,7 +3,10 @@
 #include "gcs_thread.h"
 #include "serialib.h"
 
+#include <sys/time.h>
 #include <string.h>
+
+void FlowPosition_init(void);
 
 void SetSendBufferData(sendbufQ iArray);
 uint8_t* GetRegAddress(char cHeader, uint16_t regaddr);
@@ -15,7 +18,7 @@ void SetContiuneDefaultData(void);
 void SetSendingData(char header, uint16_t period_ms, uint16_t regaddr, uint8_t length);
 uint8_t MdfRepeatArray(sendbufQ *pNewRepeat);
 
-// void analysisBuf(char R_data);
+
 void setFlightPonit(flightPoint fP);
 void ReceivedComPortDataEvent(char *buf);
 void PutFunction02(char *buf);
@@ -27,11 +30,17 @@ sendbufQ sendbufArray[SIZEREPEATARRAY];
 
 UAVstatus m600Status;
 
+BroadcastDataU onBoardStatus;
+
 uint8_t sendbuf[10][100]={"ABCDEF","1234567",
 "abcdefgh"
 };
 
 char RecvBuff[100]={0};
+
+uint8_t controlStatus = 0;
+
+
 
 void CommProtocol_task(void)
 {
@@ -67,6 +76,11 @@ void received_task(char *rec_buf,uint8_t len)
 		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
 			break;
 		// continue;
+        if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='C'))
+        {
+            controlStatus = 1;
+            return;
+        }
 	}
 	if(kc<len)
 	{
@@ -88,50 +102,6 @@ void setFlightPonit(flightPoint fP)
 
 
 
-void ReceivedComPortDataEvent(char *buf)
-{
-	switch(buf[2])
-	{
-		case 0x02:	   	// 定时返回请求
-			PutFunction02(buf);
-			break;
-		case 0x03:	   	// 读寄存器命令
-		
-			break;
-		case 0x06:		// 写寄存器命令	
-			PutFunction03(buf);
-			break;
-		case 0x07: 		// 请求应答返回
-			break;
-		case 0x08:	 	// 异常突发事件
-			break;
-		default:
-
-			break;
-	}				
-}															
-
-void PutFunction02(char *buf)
-{
-	sendbufQ newSendbuf;
-	newSendbuf.enable = 1;
-	newSendbuf.n_1ms	 = 0;	  //定时变量置0
-	newSendbuf.period_ms	= buf[6]|(buf[7]<<8);
-	newSendbuf.regaddr   = buf[4]|(buf[5]<<8);
-	newSendbuf.length    = buf[3];
-	newSendbuf.objAddr	= (buf[1]>>4)&0x0f;
-    newSendbuf.header = buf[0];	  //保存帧头字符
-
-	if(newSendbuf.regaddr==0x0FFFF)	//特定基地址 
-		stopRepeatArray();	  //停止所有定时周期发送任务
-	else 
-		MdfRepeatArray(&newSendbuf);
-}
-void PutFunction03(char *buf)
-{
-	memcpy((uint8_t *)&m600Status+TRAJ_ADDRESS+buf[4]*2*sizeof(double),&buf[5],2*sizeof(double));
-}
-
 
 
 void CommProtocol_init(void)
@@ -144,6 +114,9 @@ void CommProtocol_init(void)
 	}
 
 	SetContiuneDefaultData();
+
+
+	FlowPosition_init();
 
 }
 
@@ -353,10 +326,159 @@ void stopRepeatArray(void)
 
 
 
-void setUAVstatus(void)
+void setUAVstatus(uint8_t *onboard,uint32_t len)
 {
+  
+
+	int kc =0;
+	//onBoardStatus = onboard;
+	memcpy((uint8_t *)&onBoardStatus,onboard,len);
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+	//printf("gps : %u	%u\n",onBoardStatus.gps.date,onBoardStatus.gps.longitude);
+
+	//printf("rtk : %u	%10.7f\n",onBoardStatus.rtk.date,onBoardStatus.rtk.longitude);
+	
+
+	m600Status.ControlMode   = 1;  
+	m600Status.FlightState   = 2;      
+
+	m600Status.HandState     = 3;		
+	//m600Status.FlowStatus    = 4; 	    
+	m600Status.RobostStatue  = 5;     
+	m600Status.WorkMode      = 6;		    
+
+    m600Status.Systime	    = tv.tv_sec;//onBoardStatus.timeStamp.time;
+
+    m600Status.motorSpeed   = 0.0;
+
+    m600Status.System_vol	= onBoardStatus.battery;
+	m600Status.Motor_vol	= 8;		
+	m600Status.sysTemp		= 9;   		
+
+    m600Status.gyro_xyz[0] = (short)(onBoardStatus.w.x*1000);
+    m600Status.gyro_xyz[1] = (short)(onBoardStatus.w.y*1000);
+    m600Status.gyro_xyz[2] = (short)(onBoardStatus.w.z*1000);
+
+
+    m600Status.accl_xyz[0] = (short)(onBoardStatus.a.x*1000);
+    m600Status.accl_xyz[1] = (short)(onBoardStatus.a.y*1000);
+    m600Status.accl_xyz[2] = (short)(onBoardStatus.a.z*1000);
+
+	for ( kc = 0; kc < 3; kc++)
+	{
+        m600Status.atti[kc]		= 16+kc;
+        m600Status.veloB[kc]	= 22+kc;		
+	}
+
+	m600Status.veloN[0]    =(short)(onBoardStatus.v.x*1000);
+	m600Status.veloN[1]    =(short)(onBoardStatus.v.y*1000);
+	m600Status.veloN[2]    =(short)(onBoardStatus.v.z*1000);
+
+	m600Status.posi[0]    =onBoardStatus.pos.longitude;
+	m600Status.posi[1]    =onBoardStatus.pos.latitude;
+	m600Status.posi[2]    =onBoardStatus.pos.altitude;
+
+	
+	m600Status.GpsSol_Flags = onBoardStatus.rtk.posFlag;  
+	m600Status.GpsSol_pDOP	= 26; 	
+	m600Status.GpsSol_numSV	= 27; 	
+	
+
+
+	for( kc=0;kc<2;kc++)
+		m600Status.ImgDist[kc]=53+kc;  
 
 }
+
+
+
+void setImageStatus(uint8_t *img)
+{
+	m600Status.ImgState = img[0];    
+//	m600Status.ImgMode	= img[1];
+}
+
+void setFlowStatus(uint8_t *flow)
+{
+	m600Status.FlowStatus = flow[0];    
+//	m600Status.ImgMode	= img[1];
+}
+
+uint8_t getControlStatus(void)
+{
+  return controlStatus;
+}
+
+void getFlowPosition(unsigned short index,double *posi)
+{
+	posi[0] = m600Status.Pos_Origin[index][0];
+	posi[1] = m600Status.Pos_Origin[index][1];
+}
+
+void FlowPosition_init(void){
+	m600Status.Pos_Origin[0][0] = 0.0; 
+	m600Status.Pos_Origin[0][1] = 0.0;
+
+	m600Status.Pos_Origin[1][0] = 0.0; 
+	m600Status.Pos_Origin[1][1] = 0.0;
+
+	m600Status.Pos_Origin[2][0] = 0.0; 
+	m600Status.Pos_Origin[2][1] = 0.0;
+
+	m600Status.Pos_Origin[3][0] = 0.0; 
+	m600Status.Pos_Origin[3][1] = 0.0;
+
+	m600Status.Pos_Origin[4][0] = 0.0; 
+	m600Status.Pos_Origin[4][1] = 0.0;
+}
+
+void ReceivedComPortDataEvent(char *buf)
+{
+	switch(buf[2])
+	{
+		case 0x02:	   	// 定时返回请求
+			PutFunction02(buf);
+			break;
+		case 0x03:	   	// 读寄存器命令
+		
+			break;
+		case 0x06:		// 写寄存器命令	
+			PutFunction03(buf);
+			break;
+		case 0x07: 		// 请求应答返回
+			break;
+		case 0x08:	 	// 异常突发事件
+			break;
+		default:
+
+			break;
+	}				
+}															
+
+void PutFunction02(char *buf)
+{
+	sendbufQ newSendbuf;
+	newSendbuf.enable = 1;
+	newSendbuf.n_1ms	 = 0;	  //定时变量置0
+	newSendbuf.period_ms	= buf[6]|(buf[7]<<8);
+	newSendbuf.regaddr   = buf[4]|(buf[5]<<8);
+	newSendbuf.length    = buf[3];
+	newSendbuf.objAddr	= (buf[1]>>4)&0x0f;
+    newSendbuf.header = buf[0];	  //保存帧头字符
+
+	if(newSendbuf.regaddr==0x0FFFF)	//特定基地址 
+		stopRepeatArray();	  //停止所有定时周期发送任务
+	else 
+		MdfRepeatArray(&newSendbuf);
+}
+void PutFunction03(char *buf)
+{
+	memcpy((uint8_t *)&m600Status+TRAJ_ADDRESS+buf[4]*2*sizeof(double),&buf[5],2*sizeof(double));
+}
+
+
 
 void getUAVstatus(void)
 {
@@ -365,6 +487,8 @@ void getUAVstatus(void)
 
 	// time(&now);
 	// timenow = localtime(&now);
+  
+	int kc =0;
 
 	static float now = 0.0;
 
@@ -383,7 +507,7 @@ void getUAVstatus(void)
 	m600Status.Motor_vol	= 8;		
 	m600Status.sysTemp		= 9;   		
 
-	for (int kc = 0; kc < 3; kc++)
+	for (kc = 0; kc < 3; kc++)
 	{
 		m600Status.gyro_xyz[kc] = 10+kc;
 		m600Status.accl_xyz[kc] = 13+kc;
@@ -418,7 +542,7 @@ void getUAVstatus(void)
 
 	m600Status.ImgState = 51;    
 	m600Status.ImgMode	= 52;
-	for(int kc=0;kc<2;kc++)
+	for( kc=0;kc<2;kc++)
 		m600Status.ImgDist[kc]=53+kc;  
 
 	
