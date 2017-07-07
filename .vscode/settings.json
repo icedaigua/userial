@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "gcs_thread.c": "cpp",
+        "protocol.c": "cpp"
+    }
+}

@@ -17,8 +17,10 @@ void init_time(void) ;
 void init_sigaction(void);
 int init_serial(void);
 void thread_run(void);
+void setUAVTest(void);
 
-
+void *thread2();
+void *thread1();
 
 uint32_t number = 0;
 pthread_t thread[2];
@@ -41,12 +43,12 @@ void timeout_info(int signo) {
     if(rec_len>5)
     {
         printf("rec len = %d\n",rec_len);
-//        for(kc = 0;kc<rec_len;kc++)
-//        {
-//            printf("%x    ",buffer[kc]);
-//        }
+       for(kc = 0;kc<rec_len;kc++)
+       {
+           printf("%x    ",buffer[kc]);
+       }
 
-//        printf("\n");
+       printf("\n");
 
         received_task(buffer,rec_len);
     }
@@ -98,11 +100,12 @@ void *thread1()
     printf ("thread1 : I'm thread 1\n");
     while(1)
     {
-       printf("thread1 : number = %d\n",number);
-       pthread_mutex_lock(&mut);
-       number++;
-       pthread_mutex_unlock(&mut);
-       sleep(2);
+    //    printf("thread1 : number = %d\n",number);
+    //    pthread_mutex_lock(&mut);
+    //    number++;
+    //    pthread_mutex_unlock(&mut);
+        setUAVTest();
+        usleep(100*1000);
     }
    printf("thread1 :主函数在等我完成任务吗？\n");
    pthread_exit(NULL);
@@ -141,10 +144,10 @@ void thread_create(void)
    else
        printf("线程1 被创建\n");
 
-   if((pthread_create(&thread[1], NULL, thread2, NULL)) != 0)  //comment3
-        printf("线程2 创建失败");
-   else
-        printf("线程2 被创建\n");
+//    if((pthread_create(&thread[1], NULL, thread2, NULL)) != 0)  //comment3
+//         printf("线程2 创建失败");
+//    else
+//         printf("线程2 被创建\n");
 }
 
 void thread_wait(void)
@@ -187,4 +190,14 @@ int gcs_interface_init(void){
 
 serial * get_local_port(void){
     return s;
+}
+
+
+void setUAVTest(void)
+{
+    static uint32_t time = 0;
+    BroadcastDataU boardData = {0};
+
+    boardData.timeStamp.time = time++;
+    setUAVstatus((uint8_t*)&boardData,sizeof(BroadcastDataU));
 }

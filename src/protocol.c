@@ -25,22 +25,17 @@ void PutFunction02(char *buf);
 void PutFunction03(char *buf);
 void stopRepeatArray(void);
 
-uint16_t Base[5]={BASIC_LENGTH,FLYING_LENGTH,TRAJ_LENGTH,CTRL_LENGTH,IMG_LENGTH};
+
 sendbufQ sendbufArray[SIZEREPEATARRAY];
 
 UAVstatus m600Status;
 
 BroadcastDataU onBoardStatus;
 
-uint8_t sendbuf[10][100]={"ABCDEF","1234567",
-"abcdefgh"
-};
 
 char RecvBuff[100]={0};
 
 uint8_t controlStatus = 0;
-
-
 
 void CommProtocol_task(void)
 {
@@ -71,7 +66,7 @@ void received_task(char *rec_buf,uint8_t len)
 {
 	uint8_t kc = 0;
 	flightPoint fP = {0};
-	for(kc=0;kc<len;kc++)
+	for(kc=0;kc<len-1;kc++)
 	{
 		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
 			break;
@@ -79,12 +74,13 @@ void received_task(char *rec_buf,uint8_t len)
         if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='C'))
         {
             controlStatus = 1;
+			printf("received take off cmd\n");			
             return;
         }
 	}
-	if(kc<len)
-	{
-		printf("received cmd\n");
+	printf("received cmd\n");
+	if(kc<(len-1))
+	{	
 		memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
 
 		setFlightPonit(fP);
@@ -93,11 +89,17 @@ void received_task(char *rec_buf,uint8_t len)
 
 void setFlightPonit(flightPoint fP)
 {
-	m600Status.pose_index = fP.pose_index;
+	if(fP.pose_index == 20)
+		m600Status.pose_index = fP.pose_index - 10;
+	else
+		m600Status.pose_index = fP.pose_index;
+	
 	m600Status.Pos_Origin[m600Status.pose_index][0]
 						= fP.Pos_Origin[0];
 	m600Status.Pos_Origin[m600Status.pose_index][1]
 						= fP.Pos_Origin[1];
+	m600Status.Pos_Origin[m600Status.pose_index][2]
+						= fP.Pos_Origin[2];
 }
 
 
@@ -127,10 +129,6 @@ void SetSendBufferData(sendbufQ iArray)
 	 	iArray.length,											//发送基地址,字节长度
 	 	GetRegAddress(iArray.header, iArray.regaddr),0);		//发送的起始数据地址指针,返回标志，帧头	  
 
-	//SetSendBuffer(0xA0,0xA1,
-	//	0x100,
-	//	5,											//发送基地址,字节长度
-	//	sendbuf[iArray.index],0);		
 }
 
 
@@ -184,6 +182,7 @@ uint16_t CalBaseRegAddress(char cHeader, uint16_t regaddr)
 	else if(cHeader=='F') 	return FLYING_ADDRESS + regaddr;
 	else if(cHeader=='C')	return CTRL_ADDRESS + regaddr;
 	else if(cHeader=='T')	return TRAJ_ADDRESS + regaddr;
+	else if(cHeader=='A')	return TRAJ_APPEND_ADDRESS + regaddr;
 	else if(cHeader=='I')	return IMG_ADDRESS + regaddr;
 	else return 0xFFFF;
 	
@@ -204,26 +203,9 @@ uint8_t* GetRegAddress(char cHeader, uint16_t regaddr)
 	else if (cHeader == 'F') 	return (uint8_t *)&m600Status+FLYING_ADDRESS + regaddr;
 	else if (cHeader == 'C')	return (uint8_t *)&m600Status+CTRL_ADDRESS + regaddr;
 	else if (cHeader == 'T')	return (uint8_t *)&m600Status+TRAJ_ADDRESS + regaddr;
+	else if (cHeader == 'A')	return (uint8_t *)&m600Status+TRAJ_APPEND_ADDRESS + regaddr;
 	else if (cHeader == 'I')	return (uint8_t *)&m600Status+IMG_ADDRESS + regaddr;
 	else return NULL;
-
-	//uint8_t i = 0;
-	//uint8_t index = 0;
-	//uint16_t base = 0;
-
-	//if(cHeader=='B') 		index = 0;
-	//else if(cHeader=='F') 	index = 1;
-	//else if(cHeader=='C')	index = 2;
-	//else if(cHeader=='T')	index = 3;
-	//else if(cHeader=='I')	index = 3;
-	//else	return (uint8_t *)(-1);
-	//
-	//for(i=0;i<index;i++)
-	//{
-	//	base += Base[i];
-	//}
-
-	//return (uint8_t *)&m600Status+regaddr+base;
 
 }
 
@@ -234,11 +216,10 @@ void SetContiuneDefaultData(void)
 
 	SetSendingData('B', 1, 0, BASIC_LENGTH);		//自己添加的实验数据，返回控制模式等数据
 	SetSendingData('F', 5, 0, FLYING_LENGTH);		//自己添加的实验数据，返回控制模式等数据
-	SetSendingData('T', 5, 0, TRAJ_LENGTH);		//自己添加的实验数据，返回控制模式等数据	
+	SetSendingData('T', 5, 0, TRAJ_LENGTH);		//自己添加的实验数据，返回控制模式等数据
+	SetSendingData('A', 5, 0, TRAJ_APPEND_LENGTH);		//自己添加的实验数据，返回控制模式等数据		
 	SetSendingData('C', 5, 0, CTRL_LENGTH);		//自己添加的实验数据，返回控制模式等数据	
 	SetSendingData('I', 5, 0, IMG_LENGTH);		//自己添加的实验数据，返回控制模式等数据		
-
-//需要发回地面站的数据再添加 
 }
 
 
@@ -490,7 +471,7 @@ void getUAVstatus(void)
   
 	int kc =0;
 
-	static float now = 0.0;
+	static uint32_t now = 0;
 
 	m600Status.ControlMode   = 1;  
 	m600Status.FlightState   = 2;      
@@ -500,7 +481,7 @@ void getUAVstatus(void)
 	m600Status.RobostStatue  = 5;     
 	m600Status.WorkMode      = 6;		    
 
-	now+=0.1;
+	now+=1;
 	m600Status.Systime	    = now;
 	m600Status.motorSpeed   = 123.456;		
 	m600Status.System_vol	= 7;		
@@ -521,12 +502,12 @@ void getUAVstatus(void)
 	m600Status.GpsSol_pDOP	= 26; 	
 	m600Status.GpsSol_numSV	= 27; 	
 	
-	// m600Status.pose_index = 30;
-	// for(int kc=0;kc<5;kc++)
-	// 	for(int kj=0;kj<2;kj++)
-	// {
-	// 		m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
-	// }
+	m600Status.pose_index = 30;
+	for(int kc=0;kc<12;kc++)
+		for(int kj=0;kj<3;kj++)
+	{
+			m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
+	}
 	
 
 	m600Status.roll_obj	= 41.0;

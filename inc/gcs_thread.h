@@ -11,6 +11,8 @@ int gcs_interface_init(void);
 serial * get_local_port(void);
 
 
+void thread_create(void);
+
 #ifdef __cplusplus
 }
 #endif

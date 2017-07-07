@@ -23,10 +23,14 @@ typedef  double float64_t;
 
 #define TRAJ_HEADER		'T'
 #define TRAJ_ADDRESS	FLYING_ADDRESS+FLYING_LENGTH
-#define TRAJ_LENGTH		82
+#define TRAJ_LENGTH		122
+
+#define TRAJ_APPEND_HEADER		  'A'
+#define TRAJ_APPEND_ADDRESS	    TRAJ_ADDRESS+TRAJ_LENGTH
+#define TRAJ_APPEND_LENGTH		  168
 
 #define CTRL_HEADER		'C'
-#define CTRL_ADDRESS	TRAJ_ADDRESS+TRAJ_LENGTH
+#define CTRL_ADDRESS	TRAJ_APPEND_ADDRESS+TRAJ_APPEND_LENGTH
 #define CTRL_LENGTH		36
 
 #define IMG_HEADER		'I'
@@ -44,7 +48,7 @@ typedef struct  __attribute__((packed))
 	uint8_t header[2];
 	uint8_t length;
 	unsigned short pose_index;
-	double Pos_Origin[2]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
+	double Pos_Origin[3]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
 }flightPoint;
 
 
@@ -78,7 +82,7 @@ typedef struct  __attribute__((packed))
 	unsigned char  	GpsSol_numSV; 	// 移动平台的Number of Svs used in navigation solution;
 	
 	unsigned short pose_index;
-	double Pos_Origin[5][2]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
+	double Pos_Origin[12][3]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
 
 	float	roll_obj;
 	float 	pitch_obj;

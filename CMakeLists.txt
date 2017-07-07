@@ -26,10 +26,5 @@ pthread)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(main
-src/main.c)
+src/main.cpp)
 target_link_libraries(main ${PROJECT_NAME})
-
-
-add_executable(example
-src/example.c)
-target_link_libraries(example ${PROJECT_NAME})
