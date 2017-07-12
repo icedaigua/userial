@@ -38,23 +38,20 @@ void timeout_info(int signo) {
 
     int kc =0;
 	rec_len = serial_read(s, buffer, '\n', 128);
-	// printf("%s %d\n", buffer, strlen(buffer));
 
     if(rec_len>5)
     {
         printf("rec len = %d\n",rec_len);
-       for(kc = 0;kc<rec_len;kc++)
-       {
-           printf("%x    ",buffer[kc]);
-       }
+        // for(kc = 0;kc<rec_len;kc++)
+        // {
+        //     printf("%x    ",buffer[kc]);
+        // }
 
-       printf("\n");
+        // printf("\n");
 
         received_task(buffer,rec_len);
     }
         
-	// serial_write(s, "ls\r\n");
-    //getUAVstatus();
     CommProtocol_task();
     //printf("time is %10.3f \n",(limit++)*0.1);
 }
@@ -81,7 +78,6 @@ void init_time(void) {
 
 int init_serial(void){
 
-	// if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
     if (serial_open(&s, "/dev/ttyUSB0", 115200) == 0){
 		printf("Port opened.\n");
 
@@ -91,7 +87,6 @@ int init_serial(void){
 	}
 	printf("%s -> %d\n", s->port, s->fd);
     return 0;
-
 }
 
 
@@ -136,7 +131,6 @@ void *thread2()
 
 void thread_create(void)
 {
-    // int temp;
    memset(&thread, 0, sizeof(thread));          //comment1
         /*创建线程*/
    if(( pthread_create(&thread[0], NULL, thread1, NULL)) != 0)       //comment2
@@ -196,8 +190,22 @@ serial * get_local_port(void){
 void setUAVTest(void)
 {
     static uint32_t time = 0;
+    static int number = -1;
+    static uint8_t cnt = 0;
     BroadcastDataU boardData = {0};
 
     boardData.timeStamp.time = time++;
+
+   
+    if(cnt++ >=100){
+        printf("number = %d \n",number);
+        setImageStatus(&number);
+        
+        if((number++)>=9) number = 0;
+        cnt = 0;
+    }
+    boardData.ctrlInfo.mode = 11;
+    boardData.status = 3;
+    
     setUAVstatus((uint8_t*)&boardData,sizeof(BroadcastDataU));
 }
