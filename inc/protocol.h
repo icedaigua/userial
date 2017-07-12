@@ -95,7 +95,7 @@ typedef struct  __attribute__((packed))
 	float 	posiB_z_obj;
 
 
-	unsigned char ImgState;     // 图像辨识 状态 0：无数据 1 ：目标丢失 2 图像定位中
+    char ImgState;     // 图像辨识 状态 0：无数据 1 ：目标丢失 2 图像定位中
 	unsigned char ImgMode;      // 上电运行成功 2: 上电无图像
 	short	ImgDist[2];         // short 单位 mm  范围 ±327675mm
 
@@ -122,7 +122,7 @@ typedef struct  __attribute__((packed))
 } sendbufQ;
 
 
-typedef struct QuaternionData
+typedef struct __attribute__((packed))
 {
   float32_t q0;
   float32_t q1;
@@ -300,7 +300,12 @@ typedef struct __attribute__((packed))
 
 } GPSDataU;
 
-
+typedef struct
+{
+  double yaw;
+  double roll;
+  double pitch;
+}EulerAngleU;
 
 //! @todo
 typedef struct __attribute__((packed)) 
@@ -341,7 +346,7 @@ void getUAVstatus(void);
 
 uint8_t getControlStatus(void);
 
-void setImageStatus(uint8_t *img);
+void setImageStatus(int *img);
 void setFlowStatus(uint8_t *flow);
 
 #ifdef __cplusplus

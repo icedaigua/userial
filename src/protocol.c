@@ -5,6 +5,7 @@
 
 #include <sys/time.h>
 #include <string.h>
+#include <math.h>
 
 void FlowPosition_init(void);
 
@@ -24,6 +25,8 @@ void ReceivedComPortDataEvent(char *buf);
 void PutFunction02(char *buf);
 void PutFunction03(char *buf);
 void stopRepeatArray(void);
+
+void QtoEulerAngle(QuaternionDataU quaternionData,short int *atti);
 
 
 sendbufQ sendbufArray[SIZEREPEATARRAY];
@@ -347,9 +350,11 @@ void setUAVstatus(uint8_t *onboard,uint32_t len)
     m600Status.accl_xyz[1] = (short)(onBoardStatus.a.y*1000);
     m600Status.accl_xyz[2] = (short)(onBoardStatus.a.z*1000);
 
+    QtoEulerAngle(onBoardStatus.q,m600Status.atti);
+
 	for ( kc = 0; kc < 3; kc++)
 	{
-        m600Status.atti[kc]		= 16+kc;
+//        m600Status.atti[kc]		= 16+kc;
         m600Status.veloB[kc]	= 22+kc;		
 	}
 
@@ -373,11 +378,36 @@ void setUAVstatus(uint8_t *onboard,uint32_t len)
 
 }
 
-
-
-void setImageStatus(uint8_t *img)
+void QtoEulerAngle(QuaternionDataU quaternionData, short int *atti)
 {
-	m600Status.ImgState = img[0];    
+//  EulerAngleU ans;
+
+  double q2sqr = quaternionData.q2 * quaternionData.q2;
+  double t0 = -2.0 * (q2sqr + quaternionData.q3 * quaternionData.q3) + 1.0;
+  double t1 = +2.0 * (quaternionData.q1 * quaternionData.q2 + quaternionData.q0 * quaternionData.q3);
+  double t2 = -2.0 * (quaternionData.q1 * quaternionData.q3 - quaternionData.q0 * quaternionData.q2);
+  double t3 = +2.0 * (quaternionData.q2 * quaternionData.q3 + quaternionData.q0 * quaternionData.q1);
+  double t4 = -2.0 * (quaternionData.q1 * quaternionData.q1 + q2sqr) + 1.0;
+
+  t2 = t2 > 1.0 ? 1.0 : t2;
+  t2 = t2 < -1.0 ? -1.0 : t2;
+
+    atti[0] = (short)(asin(t2)*1000.0);
+    atti[1]  = (short)(atan2(t3, t4)*1000.0);
+    atti[2]  = (short)(atan2(t1, t0)*1000.0);
+
+
+//  ans.pitch = asin(t2);
+//  ans.roll = atan2(t3, t4);
+//  ans.yaw = atan2(t1, t0);
+
+//  return ans;
+}
+
+void setImageStatus(int *img)
+{
+    m600Status.ImgState = (char)img[0];
+
 //	m600Status.ImgMode	= img[1];
 }
 
@@ -396,6 +426,7 @@ void getFlowPosition(unsigned short index,double *posi)
 {
 	posi[0] = m600Status.Pos_Origin[index][0];
 	posi[1] = m600Status.Pos_Origin[index][1];
+    posi[2] = m600Status.Pos_Origin[index][2];
 }
 
 void FlowPosition_init(void){
@@ -469,7 +500,7 @@ void getUAVstatus(void)
 	// time(&now);
 	// timenow = localtime(&now);
   
-	int kc =0;
+    int kc =0,kj = 0;
 
 	static uint32_t now = 0;
 
@@ -503,8 +534,8 @@ void getUAVstatus(void)
 	m600Status.GpsSol_numSV	= 27; 	
 	
 	m600Status.pose_index = 30;
-	for(int kc=0;kc<12;kc++)
-		for(int kj=0;kj<3;kj++)
+    for(kc=0;kc<12;kc++)
+        for(kj=0;kj<3;kj++)
 	{
 			m600Status.Pos_Origin[kc][kj] = (kc+kj)*1.0;
 	}
