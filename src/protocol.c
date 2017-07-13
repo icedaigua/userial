@@ -10,7 +10,7 @@
 void FlowPosition_init(void);
 void setFlightPonit(flightPoint fP);
 void QtoEulerAngle(QuaternionDataU quaternionData,short int *atti);
-
+void setNumberOrder(numberOrder Nbo);
 
 
 ////////////////////////////////////Local Sending Function//////////////////////////////////////////
@@ -64,10 +64,17 @@ void received_task(char *rec_buf,uint8_t len)
 {
 	uint8_t kc = 0;
 	flightPoint fP = {0};
+	numberOrder nBO = {0};
+
 	for(kc=0;kc<len-1;kc++)
 	{
 		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
+		{
+			memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
+			setFlightPonit(fP);
+			printf("received flight points cmd\n");
 			break;
+		}
 
         if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='C'))
         {
@@ -75,14 +82,29 @@ void received_task(char *rec_buf,uint8_t len)
 			printf("received take off cmd\n");			
             return;
         }
+		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='N'))
+		{
+			memcpy((char *)&nBO,&rec_buf[kc],rec_buf[kc+2]);
+			setNumberOrder(nBO);
+			break;
+		}
 	}
-	printf("received cmd\n");
-	if(kc<(len-1))
-	{	
-		memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
 
-		setFlightPonit(fP);
-	}
+}
+
+
+void setNumberOrder(numberOrder Nbo)
+{
+	uint8_t kc = 0;
+	for(kc = 0 ;kc<10;kc++)
+		m600Status.number[kc] = Nbo.number[kc];
+}
+
+void getNumberOrder(uint8_t *number)
+{
+	uint8_t kc = 0;
+	for(kc = 0 ;kc<10;kc++)
+		number[kc] = m600Status.number[kc];
 }
 
 void setFlightPonit(flightPoint fP)

@@ -34,7 +34,7 @@ extern "C" {
 
 #define IMG_HEADER		'I'
 #define IMG_ADDRESS		CTRL_ADDRESS+CTRL_LENGTH
-#define IMG_LENGTH		6
+#define IMG_LENGTH		16
 
 
 
@@ -50,6 +50,13 @@ typedef struct  __attribute__((packed))
 	double Pos_Origin[3]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
 }flightPoint;
 
+
+typedef struct  __attribute__((packed)) 
+{
+	uint8_t header[2];
+	uint8_t length;
+	uint8_t number[10]; // 预设位置 (经度 纬度  )  0:起飞(原点) 
+}numberOrder;
 
 typedef struct  __attribute__((packed)) 
 {
@@ -97,6 +104,7 @@ typedef struct  __attribute__((packed))
     char ImgState;     // 图像辨识 状态 0：无数据 1 ：目标丢失 2 图像定位中
 	unsigned char ImgMode;      // 上电运行成功 2: 上电无图像
 	short	ImgDist[2];         // short 单位 mm  范围 ±327675mm
+	uint8_t number[10];
 
 
 } UAVstatus;
@@ -141,6 +149,8 @@ uint8_t getControlStatus(void);
 
 void setImageStatus(int *img);
 void setFlowStatus(uint8_t *flow);
+
+void getNumberOrder(uint8_t *number);
 
 #ifdef __cplusplus
 }
