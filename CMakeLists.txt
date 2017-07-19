@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME} SHARED
 src/protocol.c
 src/serialib.c
 src/gcs_thread.c
+src/iofunction.c
 )
 
 
@@ -28,3 +29,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 add_executable(main
 src/main.cpp)
 target_link_libraries(main ${PROJECT_NAME})
+
+
+add_executable(iofunc
+src/iofunction.c)
+target_link_libraries(iofunc)

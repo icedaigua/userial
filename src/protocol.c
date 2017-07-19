@@ -1,5 +1,7 @@
 
 #include "protocol.h"
+
+#include "iofunction.h"
 #include "gcs_thread.h"
 #include "serialib.h"
 
@@ -72,52 +74,101 @@ void received_task(char *rec_buf,uint8_t len)
 		switch(rec_state)
 		{
 			case 0:
+				rec_length = 0;
 				if(rec_buf[kc] == '$'){
-					rec_len++;
+				
+					RecvBuff[rec_length++] = rec_buf[kc];
 					rec_state = 1;
 				}
 				break;
 			case 1:
 				if(rec_buf[kc] == 'P'){
-					rec_len ++;
+					RecvBuff[rec_length++] = rec_buf[kc];
 					rec_state = 20;
 				}
 				if(rec_buf[kc] == 'C'){
-					rec_len ++;
-					rec_state = 20;
+					RecvBuff[rec_length++] = rec_buf[kc];
+					rec_state = 30;
 				}
 				if(rec_buf[kc] == 'N'){
-					rec_len ++;
-					rec_state = 20;
+					RecvBuff[rec_length++] = rec_buf[kc];
+					rec_state = 40;
 				}
+			break;
+
+			case 20:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				rec_state = 21;
+				break;
+			case 21:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				if(rec_length == RecvBuff[2])
+				{
+					memcpy((char *)&fP,&RecvBuff[0],RecvBuff[2]);
+					setFlightPonit(fP);
+					printf("received flight points cmd\n");
+					rec_state = 0;
+				}
+				break;
+			case 30:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				rec_state = 31;
+				break;
+			case 31:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				if(rec_length == RecvBuff[2])
+				{
+					controlStatus = 1;
+					printf("received take off cmd\n");		
+					rec_state = 0;
+				}
+				break;
+
+			case 40:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				rec_state = 41;
+				break;
+			case 41:
+				RecvBuff[rec_length++] = rec_buf[kc];
+				if(rec_length == RecvBuff[2])
+				{
+					memcpy((char *)&nBO,&RecvBuff[0],RecvBuff[2]);
+					setNumberOrder(nBO);	
+					printf("received Number order cmd\n");	
+					rec_state = 0;
+				}
+				break;
+			default:
+				rec_state = 0;
+				break;
 
 		}
 	}
 
 
-	for(kc=0;kc<len-1;kc++)
-	{
-		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
-		{
-			memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
-			setFlightPonit(fP);
-			printf("received flight points cmd\n");
-			break;
-		}
+	// for(kc=0;kc<len-1;kc++)
+	// {
+	// 	if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='P'))
+	// 	{
+	// 		memcpy((char *)&fP,&rec_buf[kc],rec_buf[kc+2]);
+	// 		setFlightPonit(fP);
+	// 		printf("received flight points cmd\n");
+	// 		break;
+	// 	}
 
-        if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='C'))
-        {
-            controlStatus = 1;
-			printf("received take off cmd\n");			
-            return;
-        }
-		if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='N'))
-		{
-			memcpy((char *)&nBO,&rec_buf[kc],rec_buf[kc+2]);
-			setNumberOrder(nBO);
-			break;
-		}
-	}
+    //     if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='C'))
+    //     {
+    //         controlStatus = 1;
+	// 		printf("received take off cmd\n");			
+    //         return;
+    //     }
+	// 	if((rec_buf[kc]=='$')&&(rec_buf[kc+1]=='N'))
+	// 	{
+	// 		memcpy((char *)&nBO,&rec_buf[kc],rec_buf[kc+2]);
+	// 		setNumberOrder(nBO);
+	// 		break;
+	// 	}
+	// }
 
 }
 
@@ -287,6 +338,8 @@ void getFlowPosition(unsigned short index,double *posi)
 }
 
 void FlowPosition_init(void){
+
+
 	m600Status.Pos_Origin[0][0] = 0.0; 
 	m600Status.Pos_Origin[0][1] = 0.0;
 
