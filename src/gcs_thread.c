@@ -39,7 +39,7 @@ void timeout_info(int signo) {
     int kc =0;
 	rec_len = serial_read(s, buffer, '\n', 128);
 
-    if(rec_len>5)
+    //if(rec_len>5)
     {
         printf("rec len = %d\n",rec_len);
         // for(kc = 0;kc<rec_len;kc++)

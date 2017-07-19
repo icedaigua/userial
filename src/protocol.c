@@ -32,6 +32,7 @@ BroadcastDataU onBoardStatus;
 
 
 char RecvBuff[100]={0};
+uint8_t rec_state = 0,rec_length = 0;
 
 uint8_t controlStatus = 0;
 
@@ -65,6 +66,34 @@ void received_task(char *rec_buf,uint8_t len)
 	uint8_t kc = 0;
 	flightPoint fP = {0};
 	numberOrder nBO = {0};
+
+	for(kc = 0;kc<len;kc++)
+	{
+		switch(rec_state)
+		{
+			case 0:
+				if(rec_buf[kc] == '$'){
+					rec_len++;
+					rec_state = 1;
+				}
+				break;
+			case 1:
+				if(rec_buf[kc] == 'P'){
+					rec_len ++;
+					rec_state = 20;
+				}
+				if(rec_buf[kc] == 'C'){
+					rec_len ++;
+					rec_state = 20;
+				}
+				if(rec_buf[kc] == 'N'){
+					rec_len ++;
+					rec_state = 20;
+				}
+
+		}
+	}
+
 
 	for(kc=0;kc<len-1;kc++)
 	{
