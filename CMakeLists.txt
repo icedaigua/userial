@@ -6,8 +6,8 @@ set( CMAKE_C_COMPILER "gcc")
 PROJECT( userial )
 set( CMAKE_BUILD_TYPE Release  )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -math -Wall -O3 -march=native" )
-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -math -O3 -march=native" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lm -Wall -O3 -march=native" )
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -lm -O3 -march=native" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/inc )
 

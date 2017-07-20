@@ -39,8 +39,11 @@ int savePositionTofile(unsigned short index,double *posi){
         fprintf(stderr, "Open failed.\n");
         return -1;
      }
-     for (i = 0; i < index-1; i++) {              // 循环index-1次, 读掉前index-1行
-           fgets(buf, 120, fp);	                // 读取一行
+
+    if(index>=1){
+        for (i = 0; i < index; i++) {              // 循环index次, 读掉前index行
+            fgets(buf, 120, fp);	                // 读取一行
+        }
     }
     // 此时文件指针指向第index行行首
     long offset = ftell(fp);	                // 记录文件指针位置, 因为后面还要读, 文件指针会移走
@@ -72,7 +75,7 @@ int savePositionTofile(unsigned short index,double *posi){
 
 int getPositionFromfile(unsigned short index,double *posi){
   char posiBuff[120],temp[120];
-  int kc=index-1;//j=4,k=0;    //第三行，第四列
+  int kc=index;//j=4,k=0;    //第三行，第四列
   FILE *fp = fopen("./flightpoints.txt","r");
   if(!fp)
   {
@@ -81,17 +84,15 @@ int getPositionFromfile(unsigned short index,double *posi){
   }
   while(fgets(temp,120,fp)){    //读入每行数据
     if(kc==0){
-        strcpy(posiBuff,temp);    //读到第三行数据
+        strcpy(posiBuff,temp);    
         break;
     }
     kc--;
-    //b[k++]=c[j-1];        //把每行的那列字符拷到b中
+
   }
 
   sscanf(posiBuff,"%3d %lf %lf %lf",&kc,&posi[0],&posi[1],&posi[2]);
-  //b[k]=0;
-//   printf("第%d行数据：%s\n",i,a);
-//   printf("第%d列数据：%s\n",j,b);
+
   fclose(fp);
 
   return 0;

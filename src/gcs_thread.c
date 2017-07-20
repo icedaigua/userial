@@ -39,7 +39,7 @@ void timeout_info(int signo) {
     int kc =0;
 	rec_len = serial_read(s, buffer, '\n', 128);
 
-    //if(rec_len>5)
+    if(rec_len>1)
     {
         printf("rec len = %d\n",rec_len);
         // for(kc = 0;kc<rec_len;kc++)
@@ -197,13 +197,13 @@ void setUAVTest(void)
     boardData.timeStamp.time = time++;
 
    
-    if(cnt++ >=100){
-        printf("number = %d \n",number);
-        setImageStatus(&number);
+    // if(cnt++ >=100){
+    //     printf("number = %d \n",number);
+    //     setImageStatus(&number);
         
-        if((number++)>=9) number = 0;
-        cnt = 0;
-    }
+    //     if((number++)>=9) number = 0;
+    //     cnt = 0;
+    // }
     boardData.ctrlInfo.mode = 11;
     boardData.status = 3;
     

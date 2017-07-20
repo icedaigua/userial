@@ -200,6 +200,9 @@ void setFlightPonit(flightPoint fP)
 						= fP.Pos_Origin[1];
 	m600Status.Pos_Origin[m600Status.pose_index][2]
 						= fP.Pos_Origin[2];
+	
+	savePositionTofile(m600Status.pose_index,
+	m600Status.Pos_Origin[m600Status.pose_index]);
 }
 
 
@@ -339,21 +342,15 @@ void getFlowPosition(unsigned short index,double *posi)
 
 void FlowPosition_init(void){
 
-
-	m600Status.Pos_Origin[0][0] = 0.0; 
-	m600Status.Pos_Origin[0][1] = 0.0;
-
-	m600Status.Pos_Origin[1][0] = 0.0; 
-	m600Status.Pos_Origin[1][1] = 0.0;
-
-	m600Status.Pos_Origin[2][0] = 0.0; 
-	m600Status.Pos_Origin[2][1] = 0.0;
-
-	m600Status.Pos_Origin[3][0] = 0.0; 
-	m600Status.Pos_Origin[3][1] = 0.0;
-
-	m600Status.Pos_Origin[4][0] = 0.0; 
-	m600Status.Pos_Origin[4][1] = 0.0;
+	unsigned short kc = 0;
+	double posi[3] = {0.0};
+	for(kc = 0;kc<12;kc++){
+		getPositionFromfile(kc,posi);
+		
+		m600Status.Pos_Origin[kc][0] = posi[0]; 
+		m600Status.Pos_Origin[kc][1] = posi[1];
+		m600Status.Pos_Origin[kc][2] = posi[2];
+	}
 }
 
 
