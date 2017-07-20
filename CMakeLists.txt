@@ -33,4 +33,4 @@ target_link_libraries(main ${PROJECT_NAME})
 
 add_executable(iofunc
 src/iofunction.c)
-target_link_libraries(iofunc)
+target_link_libraries(iofunc math)
