@@ -6,8 +6,8 @@ set( CMAKE_C_COMPILER "gcc")
 PROJECT( userial )
 set( CMAKE_BUILD_TYPE Release  )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O3 -march=native" )
-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -math -Wall -O3 -march=native" )
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -math -O3 -march=native" )
 
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/inc )
 
@@ -33,4 +33,4 @@ target_link_libraries(main ${PROJECT_NAME})
 
 add_executable(iofunc
 src/iofunction.c)
-target_link_libraries(iofunc math)
+target_link_libraries(iofunc)
